@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -119,11 +120,25 @@ public class LevelManager : MonoBehaviour
             CoinsGenerated = levelBuilder.GetCoinsGenerated();
         }
 
-        SpawnTeams();
-        
+        //SpawnTeams();
+        createPlayersPrefabs();
         UpdateTeamUI();
     }
+    public void createPlayersPrefabs()
+    {
+        //Debug.Log(GameManager.Instance.playerNumber);
+        
+        if (NetworkManager.Singleton.IsServer)
+        {
+            foreach (var id in GameManager.Instance.clientIds)
+            {
+                GameObject newPlayer = Instantiate(playerPrefab, new Vector3(0,2,0), new Quaternion());
+                newPlayer.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
+            }
 
+        }
+        
+    }
     private void Update()
     {
         if (gameMode == GameMode.Tiempo)
