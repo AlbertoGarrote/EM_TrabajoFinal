@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
-
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class GameManager : NetworkBehaviour
@@ -21,25 +21,27 @@ public class GameManager : NetworkBehaviour
     */
 
     // Start is called before the first frame update
-    public static GameManager Instance;
+    public static GameManager Instance { get; private set; }
+
     [SerializeField] NetworkManager _networkManager;
     public NetworkVariable<int> playerNumber = new NetworkVariable<int>(0);
     [SerializeField] GameObject humanPrefab, zombiePrefab;
-    public NetworkList<ulong> clientIds;
+    public List<ulong> clientIds;
     void Awake()
     {
-        if (Instance == null)
+        if (Instance != null && Instance != this)
         {
-            Instance = new GameManager();
+            Destroy(gameObject);
+            return;
         }
-        
 
-     
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        clientIds = new List<ulong>();
+
         _networkManager.OnClientConnectedCallback += OnPlayerConnect;
         _networkManager.OnClientDisconnectCallback += OnPlayerDisconnect;
-         clientIds = new NetworkList<ulong>();
-
-
     }
 
     // Update is called once per frame
@@ -91,7 +93,7 @@ public class GameManager : NetworkBehaviour
 
     public void OnPlayerConnect(ulong clientId)
     {
-        clientIds.Add(clientId);
+        AddClientToListRpc(clientId);
         playerNumber.Value += 1;
         Debug.Log($"Se ha conectado el jugador: {clientId}");
         Debug.Log($"Numero de jugadores: {clientIds.Count}");
@@ -104,11 +106,17 @@ public class GameManager : NetworkBehaviour
         playerNumber.Value -= 1;
         Debug.Log($"Se ha desconectado el jugador: {clientId}");
         Debug.Log($"Numero de jugadores: {clientIds.Count}");
-        clientIds.Remove(clientId);
+        RemoveClientFromListRpc(clientId);
     }
 
-    public void OnDestroy()
+    [Rpc(SendTo.Server)]
+    void AddClientToListRpc(ulong clientid)
     {
-        clientIds.Dispose();
+        clientIds.Add(clientid);
+    }
+
+    void RemoveClientFromListRpc(ulong clientid)
+    {
+        clientIds.Remove(clientid);
     }
 }

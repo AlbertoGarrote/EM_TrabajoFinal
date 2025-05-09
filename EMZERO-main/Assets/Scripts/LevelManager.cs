@@ -127,17 +127,25 @@ public class LevelManager : MonoBehaviour
     public void createPlayersPrefabs()
     {
         //Debug.Log(GameManager.Instance.playerNumber);
-        
-        if (NetworkManager.Singleton.IsServer)
+        if (GameManager.Instance == null)
         {
-            foreach (var id in GameManager.Instance.clientIds)
-            {
-                GameObject newPlayer = Instantiate(playerPrefab, new Vector3(0,2,0), new Quaternion());
-                newPlayer.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
-            }
-
+            Debug.Log("NO SE PUEDE");
         }
-        
+        else
+        {
+
+
+            if (NetworkManager.Singleton.IsServer)
+            {
+
+                foreach (var id in GameManager.Instance.clientIds)
+                {
+                    GameObject newPlayer = Instantiate(playerPrefab, new Vector3(0, 2, 0), new Quaternion());
+                    newPlayer.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
+                }
+
+            }
+        }
     }
     private void Update()
     {
