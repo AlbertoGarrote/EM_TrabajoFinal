@@ -22,9 +22,7 @@ public class GameManager : NetworkBehaviour
 
     // Start is called before the first frame update
     public static GameManager Instance { get; private set; }
-
     [SerializeField] NetworkManager _networkManager;
-    public NetworkVariable<int> playerNumber = new NetworkVariable<int>(0);
     [SerializeField] GameObject humanPrefab, zombiePrefab;
     public List<ulong> clientIds;
     void Awake()
@@ -47,12 +45,12 @@ public class GameManager : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void startServer()
     {
-        
+
         _networkManager.StartServer();
         Debug.Log($"Iniciado el servidor");
     }
@@ -60,26 +58,26 @@ public class GameManager : NetworkBehaviour
     public void startClient()
     {
         _networkManager.StartClient();
-        
+
     }
 
     public void createPlayersPrefabs()
     {
-        if(_networkManager.IsServer)
+        if (_networkManager.IsServer)
         {
-            foreach(var id in clientIds)
+            foreach (var id in clientIds)
             {
                 GameObject newPlayer = Instantiate(humanPrefab);
                 newPlayer.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
             }
-            
+
         }
-      
+
     }
 
     public void disconectSelf()
     {
-        if(_networkManager.IsClient)
+        if (_networkManager.IsClient)
         {
             _networkManager.Shutdown();
         }
@@ -94,7 +92,7 @@ public class GameManager : NetworkBehaviour
     public void OnPlayerConnect(ulong clientId)
     {
         AddClientToListRpc(clientId);
-        playerNumber.Value += 1;
+
         Debug.Log($"Se ha conectado el jugador: {clientId}");
         Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
@@ -102,21 +100,24 @@ public class GameManager : NetworkBehaviour
 
     public void OnPlayerDisconnect(ulong clientId)
     {
-        
-        playerNumber.Value -= 1;
+
+        RemoveClientFromListRpc(clientId);
         Debug.Log($"Se ha desconectado el jugador: {clientId}");
         Debug.Log($"Numero de jugadores: {clientIds.Count}");
-        RemoveClientFromListRpc(clientId);
+
     }
 
-    [Rpc(SendTo.Server)]
+
     void AddClientToListRpc(ulong clientid)
     {
-        clientIds.Add(clientid);
+        if (NetworkManager.IsServer)
+            clientIds.Add(clientid);
     }
+
 
     void RemoveClientFromListRpc(ulong clientid)
     {
-        clientIds.Remove(clientid);
+        if (NetworkManager.IsServer)
+            clientIds.Remove(clientid);
     }
 }

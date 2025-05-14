@@ -1,6 +1,8 @@
+using System.Globalization;
+using Unity.Netcode;
 using UnityEngine;
 
-public class CameraController : MonoBehaviour
+public class CameraController : NetworkBehaviour
 {
     public Transform player;            // Referencia al jugador
     public Vector3 offset = new Vector3(0f, 2f, -5f);  // Desplazamiento desde el jugador
@@ -36,6 +38,15 @@ public class CameraController : MonoBehaviour
 
         // Limitar la inclinación de la cámara
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!IsOwner)
+        {
+            Destroy(gameObject);
+        }
+        base.OnNetworkSpawn();
     }
 
     private void UpdateCameraPosition()

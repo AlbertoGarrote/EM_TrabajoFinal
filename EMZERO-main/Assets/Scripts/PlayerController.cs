@@ -47,6 +47,15 @@ public class PlayerController : NetworkBehaviour
         UpdateCoinUI();
     }
 
+    public override void OnNetworkSpawn()
+    {
+        if (!IsOwner)
+        {
+            this.enabled = false;
+        }
+        base.OnNetworkSpawn();
+    }
+
     void Update()
     {
         // Leer entrada del teclado
@@ -60,36 +69,30 @@ public class PlayerController : NetworkBehaviour
         HandleAnimations();
     }
 
-    
+
 
     void MovePlayer()
     {
+        if (cameraTransform == null) { return; }
 
+        // Calcular la dirección de movimiento en relación a la cámara
+        Vector3 moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
+        moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
 
-        if (IsOwner)
+        // Mover el jugador usando el Transform
+        if (moveDirection != Vector3.zero)
         {
+            // Calcular la rotación en Y basada en la dirección del movimiento
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, 720f * Time.deltaTime);
 
+            // Ajustar la velocidad si es zombie
+            float adjustedSpeed = isZombie ? moveSpeed * zombieSpeedModifier : moveSpeed;
 
-            if (cameraTransform == null) { return; }
-
-            // Calcular la dirección de movimiento en relación a la cámara
-            Vector3 moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
-            moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
-
-            // Mover el jugador usando el Transform
-            if (moveDirection != Vector3.zero)
-            {
-                // Calcular la rotación en Y basada en la dirección del movimiento
-                Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, 720f * Time.deltaTime);
-
-                // Ajustar la velocidad si es zombie
-                float adjustedSpeed = isZombie ? moveSpeed * zombieSpeedModifier : moveSpeed;
-
-                // Mover al jugador en la dirección deseada
-                transform.Translate(moveDirection * adjustedSpeed * Time.deltaTime, Space.World);
-            }
+            // Mover al jugador en la dirección deseada
+            transform.Translate(moveDirection * adjustedSpeed * Time.deltaTime, Space.World);
         }
+
     }
 
     void HandleAnimations()

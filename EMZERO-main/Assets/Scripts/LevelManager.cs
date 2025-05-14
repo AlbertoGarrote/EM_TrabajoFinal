@@ -34,6 +34,9 @@ public class LevelManager : MonoBehaviour
     [Tooltip("Tiempo de partida en minutos para el modo tiempo")]
     [SerializeField] private int minutes = 5;
 
+    [Tooltip("Camara que se instanciará para cada jugador")]
+    [SerializeField] private GameObject camPrefab;
+
     private List<Vector3> humanSpawnPoints = new List<Vector3>();
     private List<Vector3> zombieSpawnPoints = new List<Vector3>();
 
@@ -120,8 +123,12 @@ public class LevelManager : MonoBehaviour
             CoinsGenerated = levelBuilder.GetCoinsGenerated();
         }
 
-        //SpawnTeams();
-        createPlayersPrefabs();
+
+
+        if(NetworkManager.Singleton.IsServer)
+            SpawnTeams();
+
+        //createPlayersPrefabs();
         UpdateTeamUI();
     }
     public void createPlayersPrefabs()
@@ -140,8 +147,7 @@ public class LevelManager : MonoBehaviour
 
                 foreach (var id in GameManager.Instance.clientIds)
                 {
-                    GameObject newPlayer = Instantiate(playerPrefab, new Vector3(0, 2, 0), new Quaternion());
-                    newPlayer.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
+                    
                 }
 
             }
@@ -330,7 +336,7 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    private void SpawnPlayer(Vector3 spawnPosition, GameObject prefab)
+    private void SpawnPlayer(Vector3 spawnPosition, GameObject prefab, ulong id)
     {
         Debug.Log($"Instanciando jugador en {spawnPosition}");
         if (prefab != null)
@@ -339,9 +345,13 @@ public class LevelManager : MonoBehaviour
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
             player.tag = "Player";
+            player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
 
-            // Obtener la referencia a la cámara principal
-            Camera mainCamera = Camera.main;
+            
+            GameObject camObject = Instantiate(camPrefab); 
+            Camera mainCamera = camObject.GetComponent<Camera>();
+            camObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
+            
 
             if (mainCamera != null)
             {
@@ -362,7 +372,7 @@ public class LevelManager : MonoBehaviour
                 if (playerController != null)
                 {
                     Debug.Log($"PlayerController encontrado en el jugador instanciado.");
-                    playerController.enabled = true;
+                    //playerController.enabled = true;
                     playerController.cameraTransform = mainCamera.transform;
                     playerController.uniqueID = uniqueIdGenerator.GenerateUniqueID(); // Generar un identificador único
 
@@ -386,15 +396,20 @@ public class LevelManager : MonoBehaviour
     private void SpawnTeams()
     {
         Debug.Log("Instanciando equipos");
-        if (humanSpawnPoints.Count <= 0) { return; }
-        SpawnPlayer(humanSpawnPoints[0], playerPrefab);
-        Debug.Log($"Personaje jugable instanciado en {humanSpawnPoints[0]}");
+
+        numberOfZombies = 0;
+        numberOfHumans = GameManager.Instance.clientIds.Count;
+
+        //if (humanSpawnPoints.Count <= 0) { return; }
+        //SpawnPlayer(humanSpawnPoints[0], playerPrefab);
+        //Debug.Log($"Personaje jugable instanciado en {humanSpawnPoints[0]}");
 
         for (int i = 1; i < numberOfHumans; i++)
         {
             if (i < humanSpawnPoints.Count)
             {
-                SpawnNonPlayableCharacter(playerPrefab, humanSpawnPoints[i]);
+                ulong id = GameManager.Instance.clientIds[i];
+                SpawnPlayer(humanSpawnPoints[i], playerPrefab, id);
             }
         }
 
@@ -402,7 +417,8 @@ public class LevelManager : MonoBehaviour
         {
             if (i < zombieSpawnPoints.Count)
             {
-                SpawnNonPlayableCharacter(zombiePrefab, zombieSpawnPoints[i]);
+                ulong id = GameManager.Instance.clientIds[i];
+                SpawnPlayer(zombieSpawnPoints[i], zombiePrefab, id);
             }
         }
     }

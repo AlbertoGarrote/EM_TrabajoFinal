@@ -24,7 +24,7 @@ public class MenuManager : MonoBehaviour
             Destroy(this);
         }
 
-        if (NetworkManager.Singleton.IsServer && GameManager.Instance.playerNumber.Value >= minPlayerNumber)
+        if (NetworkManager.Singleton.IsServer && GameManager.Instance.clientIds.Count >= minPlayerNumber)
         {
             NetworkManager.Singleton.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
             //startGame.Invoke();
