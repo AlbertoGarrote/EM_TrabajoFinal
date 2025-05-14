@@ -1603,8 +1603,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _networkManager: {fileID: 67375524}
-  playerNumber:
-    m_InternalValue: 0
   humanPrefab: {fileID: 0}
   zombiePrefab: {fileID: 0}
   clientIds: 

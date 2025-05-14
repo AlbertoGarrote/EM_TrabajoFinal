@@ -2,6 +2,7 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
+
 public class PlayerController : NetworkBehaviour
 {
     private TextMeshProUGUI coinText;
@@ -21,6 +22,9 @@ public class PlayerController : NetworkBehaviour
 
     private float horizontalInput;         // Entrada horizontal (A/D o flechas)
     private float verticalInput;           // Entrada vertical (W/S o flechas)
+
+    public GameObject cameraPrefab;
+    Vector3 moveDirection;
 
     void Start()
     {
@@ -49,23 +53,50 @@ public class PlayerController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner)
+        if (!IsOwner && !NetworkManager.Singleton.IsServer)
         {
             this.enabled = false;
         }
+        else if(!IsServer)
+        {
+            GameObject camera = Instantiate(cameraPrefab);
+            cameraTransform = camera.transform;
+            CameraController controller = camera.GetComponent<CameraController>();
+            controller.enabled = true;
+            controller.player = transform;
+            
+        }
+        
+        
+
         base.OnNetworkSpawn();
     }
 
     void Update()
     {
-        // Leer entrada del teclado
-        horizontalInput = Input.GetAxis("Horizontal");
-        verticalInput = Input.GetAxis("Vertical");
+        if(!IsServer)
+        {
+            // Leer entrada del teclado
+            horizontalInput = Input.GetAxis("Horizontal");
+            verticalInput = Input.GetAxis("Vertical");
 
+            if (cameraTransform != null)
+            {
+                // Calcular la dirección de movimiento en relación a la cámara
+                moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
+                moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
+                UpdateMoveDirectionRpc(moveDirection);
+            }
+        }
+        
+        
+       
         // Mover el jugador
+        if(IsServer)
         MovePlayer();
 
         // Manejar las animaciones del jugador
+        //if(IsServer)
         HandleAnimations();
     }
 
@@ -73,12 +104,6 @@ public class PlayerController : NetworkBehaviour
 
     void MovePlayer()
     {
-        if (cameraTransform == null) { return; }
-
-        // Calcular la dirección de movimiento en relación a la cámara
-        Vector3 moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
-        moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
-
         // Mover el jugador usando el Transform
         if (moveDirection != Vector3.zero)
         {
@@ -116,6 +141,12 @@ public class PlayerController : NetworkBehaviour
         {
             coinText.text = $"{CoinsCollected}";
         }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void UpdateMoveDirectionRpc(Vector3 input)
+    {
+        moveDirection = input;
     }
 }
 

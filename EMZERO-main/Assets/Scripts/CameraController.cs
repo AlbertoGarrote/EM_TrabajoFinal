@@ -2,7 +2,7 @@ using System.Globalization;
 using Unity.Netcode;
 using UnityEngine;
 
-public class CameraController : NetworkBehaviour
+public class CameraController : MonoBehaviour
 {
     public Transform player;            // Referencia al jugador
     public Vector3 offset = new Vector3(0f, 2f, -5f);  // Desplazamiento desde el jugador
@@ -14,6 +14,7 @@ public class CameraController : NetworkBehaviour
     private float yaw = 0f;             // Rotación alrededor del eje Y
     private float pitch = 2f;           // Inclinación hacia arriba/abajo (eje X)
 
+    public bool initialized = false;
     void LateUpdate()
     {
         if (player == null)
@@ -22,8 +23,11 @@ public class CameraController : NetworkBehaviour
             return;
         }
 
+      
+
         HandleCameraRotation();
         UpdateCameraPosition();
+        
     }
 
     private void HandleCameraRotation()
@@ -40,14 +44,7 @@ public class CameraController : NetworkBehaviour
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
     }
 
-    public override void OnNetworkSpawn()
-    {
-        if (!IsOwner)
-        {
-            Destroy(gameObject);
-        }
-        base.OnNetworkSpawn();
-    }
+
 
     private void UpdateCameraPosition()
     {

@@ -338,25 +338,29 @@ public class LevelManager : MonoBehaviour
 
     private void SpawnPlayer(Vector3 spawnPosition, GameObject prefab, ulong id)
     {
+        
         Debug.Log($"Instanciando jugador en {spawnPosition}");
         if (prefab != null)
         {
+            
             Debug.Log($"Instanciando jugador en {spawnPosition}");
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
             player.tag = "Player";
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
 
-            
-            GameObject camObject = Instantiate(camPrefab); 
-            Camera mainCamera = camObject.GetComponent<Camera>();
-            camObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
-            
+            //GameObject camObject = Instantiate(camPrefab);
+            //Camera mainCamera = camObject.GetComponent<Camera>();
 
+
+
+
+            /*
             if (mainCamera != null)
             {
+                Debug.Log($"Camara instanciada");
                 // Obtener el script CameraController de la cámara principal
-                CameraController cameraController = mainCamera.GetComponent<CameraController>();
+                CameraController cameraController = mainCamera.gameObject.GetComponent<CameraController>();
 
                 if (cameraController != null)
                 {
@@ -366,6 +370,11 @@ public class LevelManager : MonoBehaviour
                 }
 
                 Debug.Log($"Cámara principal encontrada en {mainCamera}");
+
+                //mainCamera.GetComponent<NetworkObject>().SpawnWithOwnership(id);
+
+
+
                 // Obtener el componente PlayerController del jugador instanciado
                 playerController = player.GetComponent<PlayerController>();
                 // Asignar el transform de la cámara al PlayerController
@@ -373,7 +382,7 @@ public class LevelManager : MonoBehaviour
                 {
                     Debug.Log($"PlayerController encontrado en el jugador instanciado.");
                     //playerController.enabled = true;
-                    playerController.cameraTransform = mainCamera.transform;
+                    //playerController.cameraTransform = mainCamera.transform;
                     playerController.uniqueID = uniqueIdGenerator.GenerateUniqueID(); // Generar un identificador único
 
                 }
@@ -386,11 +395,14 @@ public class LevelManager : MonoBehaviour
             {
                 Debug.LogError("No se encontró la cámara principal.");
             }
+            */
         }
+
         else
-        {
+            {
             Debug.LogError("Faltan referencias al prefab o al punto de aparición.");
         }
+            
     }
 
     private void SpawnTeams()
@@ -404,13 +416,14 @@ public class LevelManager : MonoBehaviour
         //SpawnPlayer(humanSpawnPoints[0], playerPrefab);
         //Debug.Log($"Personaje jugable instanciado en {humanSpawnPoints[0]}");
 
-        for (int i = 1; i < numberOfHumans; i++)
+        for (int i = 0; i < numberOfHumans; i++)
         {
-            if (i < humanSpawnPoints.Count)
-            {
+            //if (i < humanSpawnPoints.Count)
+           //{
                 ulong id = GameManager.Instance.clientIds[i];
-                SpawnPlayer(humanSpawnPoints[i], playerPrefab, id);
-            }
+                Debug.Log($"Creando humano para el jugador {id}");
+                SpawnPlayer(humanSpawnPoints[0], playerPrefab, id);
+            //}
         }
 
         for (int i = 0; i < numberOfZombies; i++)
