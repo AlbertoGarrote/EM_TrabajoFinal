@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
+using TMPro;
 
 public class GameManager : NetworkBehaviour
 {
@@ -23,8 +24,15 @@ public class GameManager : NetworkBehaviour
     // Start is called before the first frame update
     public static GameManager Instance { get; private set; }
     [SerializeField] NetworkManager _networkManager;
-    [SerializeField] GameObject humanPrefab, zombiePrefab;
+    [SerializeField] GameObject humanPrefab, zombiePrefab, onlineInfoText;
     public List<ulong> clientIds;
+    TMP_Text onlinePlayerNumberInfo, onlineTypeInfo;
+    public string clientName;
+    private UniqueIdGenerator uniqueIdGenerator;
+    public int minPlayerNumber = 4;
+
+    bool serverStarted = false;
+    bool thisClientStarted = false;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -40,6 +48,12 @@ public class GameManager : NetworkBehaviour
 
         _networkManager.OnClientConnectedCallback += OnPlayerConnect;
         _networkManager.OnClientDisconnectCallback += OnPlayerDisconnect;
+
+        onlineTypeInfo = onlineInfoText.GetComponentsInChildren<TMP_Text>()[0];
+        onlinePlayerNumberInfo = onlineInfoText.GetComponentsInChildren<TMP_Text>()[1];
+        onlineInfoText.SetActive(false);
+        
+        uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
     }
 
     // Update is called once per frame
@@ -50,29 +64,27 @@ public class GameManager : NetworkBehaviour
 
     public void startServer()
     {
+        if (!serverStarted)
+        {
+            clientName = uniqueIdGenerator.GenerateUniqueID();
+            _networkManager.StartServer();
+            serverStarted = true;
+            Debug.Log($"Iniciado el servidor");
+            onlineTypeInfo.text = $"{clientName} [Servidor]";
+            onlinePlayerNumberInfo.text = $"Jugadores: 0/{minPlayerNumber}";
+            onlineInfoText.SetActive(true);
+            onlinePlayerNumberInfo.gameObject.SetActive(true);
+            
+        }
 
-        _networkManager.StartServer();
-        Debug.Log($"Iniciado el servidor");
     }
 
     public void startClient()
     {
-        _networkManager.StartClient();
-
-    }
-
-    public void createPlayersPrefabs()
-    {
-        if (_networkManager.IsServer)
+        if(!thisClientStarted)
         {
-            foreach (var id in clientIds)
-            {
-                GameObject newPlayer = Instantiate(humanPrefab);
-                newPlayer.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
-            }
-
+            _networkManager.StartClient();
         }
-
     }
 
     public void disconectSelf()
@@ -91,33 +103,64 @@ public class GameManager : NetworkBehaviour
 
     public void OnPlayerConnect(ulong clientId)
     {
-        AddClientToListRpc(clientId);
+        AddClientToList(clientId);
 
         Debug.Log($"Se ha conectado el jugador: {clientId}");
         Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
+        onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
+
+        CreateClientID(clientId);
     }
 
     public void OnPlayerDisconnect(ulong clientId)
     {
 
-        RemoveClientFromListRpc(clientId);
+        RemoveClientFromList(clientId);
         Debug.Log($"Se ha desconectado el jugador: {clientId}");
         Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
+        onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
     }
 
 
-    void AddClientToListRpc(ulong clientid)
+    void AddClientToList(ulong clientid)
     {
         if (NetworkManager.IsServer)
             clientIds.Add(clientid);
     }
 
 
-    void RemoveClientFromListRpc(ulong clientid)
+    void RemoveClientFromList(ulong clientid)
     {
         if (NetworkManager.IsServer)
             clientIds.Remove(clientid);
     }
+
+    public void CreateClientID(ulong targetClientId)
+    {
+        var clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new[] { targetClientId }
+            }
+        };
+
+        string clientName = uniqueIdGenerator.GenerateUniqueID();
+        ReceiveMessageClientRpc(clientName, clientRpcParams);
+    }
+
+    [ClientRpc]
+    private void ReceiveMessageClientRpc(string message, ClientRpcParams clientRpcParams = default)
+    {
+        clientName = message;
+        onlineTypeInfo.text = message;
+        onlinePlayerNumberInfo.text = "Conectado!";
+        thisClientStarted = true;
+        onlineInfoText.SetActive(true);
+    }
+
+
+
 }

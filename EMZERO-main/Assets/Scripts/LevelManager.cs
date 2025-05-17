@@ -50,7 +50,7 @@ public class LevelManager : MonoBehaviour
     public string PlayerPrefabName => playerPrefab.name;
     public string ZombiePrefabName => zombiePrefab.name;
 
-    private UniqueIdGenerator uniqueIdGenerator;
+    //private UniqueIdGenerator uniqueIdGenerator;
     private LevelBuilder levelBuilder;
 
     private PlayerController playerController;
@@ -69,7 +69,7 @@ public class LevelManager : MonoBehaviour
         Debug.Log("Despertando el nivel");
 
         // Obtener la referencia al UniqueIDGenerator
-        uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
+        //uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
 
         // Obtener la referencia al LevelBuilder
         levelBuilder = GetComponent<LevelBuilder>();
@@ -347,6 +347,7 @@ public class LevelManager : MonoBehaviour
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
             player.tag = "Player";
+            player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientName;
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
 
             //GameObject camObject = Instantiate(camPrefab);
@@ -436,6 +437,7 @@ public class LevelManager : MonoBehaviour
         }
     }
 
+    /*
     private void SpawnNonPlayableCharacter(GameObject prefab, Vector3 spawnPosition)
     {
         if (prefab != null)
@@ -451,7 +453,7 @@ public class LevelManager : MonoBehaviour
             Debug.Log($"Personaje no jugable instanciado en {spawnPosition}");
         }
     }
-
+    ^*/
     private void UpdateTeamUI()
     {
         if (humansText != null)
