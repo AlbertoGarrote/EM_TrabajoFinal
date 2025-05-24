@@ -1780,7 +1780,7 @@ MonoBehaviour:
   onlineInfoText: {fileID: 1026548063}
   clientIds: 
   clientName: 
-  minPlayerNumber: 1
+  minPlayerNumber: 0
 --- !u!4 &1259336692
 Transform:
   m_ObjectHideFlags: 0

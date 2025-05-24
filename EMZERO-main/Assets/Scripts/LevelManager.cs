@@ -419,12 +419,12 @@ public class LevelManager : MonoBehaviour
 
         for (int i = 0; i < numberOfHumans; i++)
         {
-            //if (i < humanSpawnPoints.Count)
-           //{
+            if (i < humanSpawnPoints.Count)
+            {
                 ulong id = GameManager.Instance.clientIds[i];
                 Debug.Log($"Creando humano para el jugador {id}");
-                SpawnPlayer(humanSpawnPoints[0], playerPrefab, id);
-            //}
+                SpawnPlayer(humanSpawnPoints[i], playerPrefab, id);
+            }
         }
 
         for (int i = 0; i < numberOfZombies; i++)

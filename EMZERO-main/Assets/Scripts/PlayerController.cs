@@ -55,7 +55,7 @@ public class PlayerController : NetworkBehaviour
     {
         if (!IsOwner && !NetworkManager.Singleton.IsServer)
         {
-            this.enabled = false;
+            //this.enabled = false;
         }
         else if(!IsServer)
         {
@@ -74,7 +74,7 @@ public class PlayerController : NetworkBehaviour
 
     void Update()
     {
-        if(!IsServer)
+        if(!IsServer && IsOwner)
         {
             // Leer entrada del teclado
             horizontalInput = Input.GetAxis("Horizontal");
@@ -83,21 +83,22 @@ public class PlayerController : NetworkBehaviour
             if (cameraTransform != null)
             {
                 // Calcular la dirección de movimiento en relación a la cámara
-                moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
-                moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
-                UpdateMoveDirectionRpc(moveDirection);
+                //moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
+                //moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
+                UpdateMoveDirectionRpc(cameraTransform.forward, cameraTransform.right, horizontalInput, verticalInput);
             }
         }
-        
-        
-       
-        // Mover el jugador
-        if(IsServer)
-        MovePlayer();
 
-        // Manejar las animaciones del jugador
-        //if(IsServer)
-        HandleAnimations();
+
+
+        // Mover el jugador
+        if (IsServer)
+        {
+            MovePlayer();
+
+            HandleAnimations();
+        }
+
     }
 
 
@@ -119,6 +120,7 @@ public class PlayerController : NetworkBehaviour
         }
 
     }
+
 
     void HandleAnimations()
     {
@@ -144,9 +146,13 @@ public class PlayerController : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    public void UpdateMoveDirectionRpc(Vector3 input)
+    public void UpdateMoveDirectionRpc(Vector3 cameraForward, Vector3 cameraRight, float horizontal, float vertical)
     {
-        moveDirection = input;
+        horizontalInput = horizontal;
+        verticalInput = vertical;
+        moveDirection = (cameraForward * verticalInput + cameraRight * horizontalInput).normalized;
+        moveDirection.y = 0;
     }
+
 }
 

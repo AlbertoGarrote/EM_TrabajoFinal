@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
 /// Clase para generar el nivel del juego, incluyendo suelos, paredes, ítems decorativos, monedas y el borde exterior.
 /// </summary>
-public class LevelBuilder : MonoBehaviour
+public class LevelBuilder : NetworkBehaviour
 {
     #region Properties
 
@@ -36,7 +37,7 @@ public class LevelBuilder : MonoBehaviour
 
     [Header("Room Settings")]
     [Tooltip("Número total de salas")]
-    [SerializeField] private int numberOfRooms = 1;
+    [SerializeField] private int numberOfRooms = 4;
 
     [Tooltip("Ancho de cada sala")]
     [SerializeField] private int roomWidth = 5;
@@ -145,8 +146,16 @@ public class LevelBuilder : MonoBehaviour
                 GameObject tile = Instantiate(selectedFloorPrefab, tilePosition, Quaternion.identity, roomParent);
                 tile.name = $"Tile_{x}_{z}";
 
-                CreateDecorativeItem(x, z, width, length, tilePosition);
-                CreateCoin(x, z, width, length, tilePosition);
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    
+                    float seed = Random.Range(0, 100);
+                    int itemSeed = Random.Range(0, obstaclesPrefabs.Length);
+                    //Debug.Log(seed);
+                    CreateDecorativeItem(x, z, width, length, tilePosition, seed, itemSeed);
+                    CreateDecorativeItemRPC(x, z, width, length, tilePosition, seed, itemSeed);
+                    CreateCoin(x, z, width, length, tilePosition);
+                } 
             }
         }
 
@@ -216,6 +225,13 @@ public class LevelBuilder : MonoBehaviour
         Instantiate(prefab, position, rotation, roomParent);
     }
 
+    private void PlaceNetworkElement(GameObject prefab, float x, float z, Quaternion rotation)
+    {
+        Vector3 position = new Vector3(x, 0, z);
+        GameObject objectNW = Instantiate(prefab, position, rotation, roomParent);
+        objectNW.GetComponent<NetworkObject>().Spawn();
+    }
+
     /// <summary>
     /// Crea el muro exterior alrededor de las salas.
     /// </summary>
@@ -242,7 +258,7 @@ public class LevelBuilder : MonoBehaviour
     /// <summary>
     /// Coloca ítems decorativos en las baldosas del suelo.
     /// </summary>
-    private void CreateDecorativeItem(int x, int z, int width, int length, Vector3 tilePosition)
+    private void CreateDecorativeItem(int x, int z, int width, int length, Vector3 tilePosition, float seed, int itemSeed)
     {
         bool widthBorderCondition = x > 0 && x < (width - 1);
         bool lengthBorderCondition = z > 0 && z < (length - 1);
@@ -257,19 +273,26 @@ public class LevelBuilder : MonoBehaviour
 
         bool totalCondition = widthBorderCondition && lengthBorderCondition && blockingDoorConditionX && blockingDoorConditionZ;
 
-        if (totalCondition && ShouldPlaceItem())
+       
+        if (totalCondition && ShouldPlaceItem(seed))
         {
-            int randomIndex = Random.Range(0, obstaclesPrefabs.Length);
-            GameObject obstaclePrefab = obstaclesPrefabs[randomIndex];
+            
+            GameObject obstaclePrefab = obstaclesPrefabs[itemSeed];
             obstaclePrefab.tag = "Obstacle";
             PlaceElement(obstaclePrefab, tilePosition.x, tilePosition.z, Quaternion.identity);
         }
     }
 
-    /// <summary>
-    /// Coloca monedas en las baldosas del suelo.
-    /// </summary>
-    private void CreateCoin(int x, int z, int width, int length, Vector3 tilePosition)
+    [Rpc(SendTo.NotServer)]
+    private void CreateDecorativeItemRPC(int x, int z, int width, int length, Vector3 tilePosition, float seed, int itemSeed)
+    {
+        Debug.Log("GENERANDO ITEM EN CLIENTE");
+        CreateDecorativeItem(x, z, width, length, tilePosition, seed, itemSeed);
+    }
+        /// <summary>
+        /// Coloca monedas en las baldosas del suelo.
+        /// </summary>
+        private void CreateCoin(int x, int z, int width, int length, Vector3 tilePosition)
     {
         bool widthBorderCondition = x > 0 && x < (width - 1);
         bool lengthBorderCondition = z > 0 && z < (length - 1);
@@ -285,7 +308,7 @@ public class LevelBuilder : MonoBehaviour
 
             if (!isPositionOccupied) // Si no hay obstáculos, colocar la moneda
             {
-                PlaceElement(coinPrefab, tilePosition.x, tilePosition.z, Quaternion.identity);
+                PlaceNetworkElement(coinPrefab, tilePosition.x, tilePosition.z, Quaternion.identity);
                 CoinsGenerated++;
             }
         }
@@ -294,10 +317,10 @@ public class LevelBuilder : MonoBehaviour
     /// <summary>
     /// Determina si se debe colocar un ítem decorativo basado en la densidad configurada.
     /// </summary>
-    private bool ShouldPlaceItem()
+    private bool ShouldPlaceItem(float seed)
     {
-        float randomValue = Random.Range(0, 100);
-        return randomValue < ítemsDensity;
+        //float randomValue = Random.Range(0, 100);
+        return seed < ítemsDensity;
     }
 
     /// <summary>
