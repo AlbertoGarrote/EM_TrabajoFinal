@@ -5,6 +5,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using TMPro;
 
+
 public class GameManager : NetworkBehaviour
 {
     /*
@@ -33,6 +34,7 @@ public class GameManager : NetworkBehaviour
 
     bool serverStarted = false;
     bool thisClientStarted = false;
+    bool thisClientHasName = false;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -84,6 +86,7 @@ public class GameManager : NetworkBehaviour
         if(!thisClientStarted)
         {
             _networkManager.StartClient();
+
         }
     }
 
@@ -92,6 +95,8 @@ public class GameManager : NetworkBehaviour
         if (_networkManager.IsClient)
         {
             _networkManager.Shutdown();
+            onlinePlayerNumberInfo.text = "";
+            thisClientStarted = false;
         }
         if (_networkManager.IsServer)
         {
@@ -103,24 +108,32 @@ public class GameManager : NetworkBehaviour
 
     public void OnPlayerConnect(ulong clientId)
     {
-        AddClientToList(clientId);
+        if (_networkManager.IsServer)
+        {
+            AddClientToList(clientId);
 
-        Debug.Log($"Se ha conectado el jugador: {clientId}");
-        Debug.Log($"Numero de jugadores: {clientIds.Count}");
+            Debug.Log($"Se ha conectado el jugador: {clientId}");
+            Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
-        onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
+            onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
 
-        CreateClientID(clientId);
+            if(!thisClientHasName)
+            CreateClientID(clientId);
+        }
     }
 
     public void OnPlayerDisconnect(ulong clientId)
     {
+        if (_networkManager.IsServer)
+        {
 
-        RemoveClientFromList(clientId);
-        Debug.Log($"Se ha desconectado el jugador: {clientId}");
-        Debug.Log($"Numero de jugadores: {clientIds.Count}");
+            RemoveClientFromList(clientId);
+            Debug.Log($"Se ha desconectado el jugador: {clientId}");
+            Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
-        onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
+            onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
+
+        }
     }
 
 
@@ -148,18 +161,20 @@ public class GameManager : NetworkBehaviour
         };
 
         string clientName = uniqueIdGenerator.GenerateUniqueID();
-        ReceiveMessageClientRpc(clientName, clientRpcParams);
+        ConnectPlayerClientRpc(clientName, clientRpcParams);
     }
 
     [ClientRpc]
-    private void ReceiveMessageClientRpc(string message, ClientRpcParams clientRpcParams = default)
+    private void ConnectPlayerClientRpc(string message, ClientRpcParams clientRpcParams = default)
     {
         clientName = message;
         onlineTypeInfo.text = message;
         onlinePlayerNumberInfo.text = "Conectado!";
         thisClientStarted = true;
+        thisClientHasName = true;
         onlineInfoText.SetActive(true);
     }
+
 
 
 

@@ -24,7 +24,7 @@ public class MenuManager : MonoBehaviour
         // Cambia "MainScene" por el nombre de tu escena principal
         //Inicia la partida para todos los clientes
         //Compart el mapa a todos los clientes
-        
+
     }
 
     public void QuitGame()
@@ -36,7 +36,7 @@ public class MenuManager : MonoBehaviour
 #endif
     }
 
-    public void UpdateButton(Button b,UpdateCondition updateCondition)
+    public void UpdateButton(Button b, UpdateCondition updateCondition)
     {
         if (updateCondition())
         {
@@ -50,6 +50,10 @@ public class MenuManager : MonoBehaviour
 
     public void Update()
     {
-        UpdateButton(startButton, ()=> GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber);
+        UpdateButton(startButton, 
+            () => GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber && NetworkManager.Singleton.IsServer
+            );
+
+
     }
 }
