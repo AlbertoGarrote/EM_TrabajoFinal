@@ -1927,7 +1927,7 @@ MonoBehaviour:
   doorHolePrefab: {fileID: 5834726729177827597, guid: b00d7c3360a690f4083f0859c6c11700, type: 3}
   exteriorPrefab: {fileID: 752405452192877454, guid: 99966f05d64cd9248a89c4b55dd0abe5, type: 3}
   coinPrefab: {fileID: 4991860089593518421, guid: 1732822753d02b8478d46ed30d6a93bc, type: 3}
-  numberOfRooms: 16
+  numberOfRooms: 32
   roomWidth: 9
   roomLength: 9
   "\xEDtemsDensity": 20

@@ -26,6 +26,8 @@ public class PlayerController : NetworkBehaviour
     public GameObject cameraPrefab;
     Vector3 moveDirection;
 
+    public ulong id;
+
     void Start()
     {
         // Buscar el objeto "CanvasPlayer" en la escena
@@ -70,6 +72,12 @@ public class PlayerController : NetworkBehaviour
         
 
         base.OnNetworkSpawn();
+    }
+
+    public void MoveCamera(Transform camera)
+    {
+        cameraTransform.position = camera.position;
+        cameraTransform.rotation = camera.rotation;
     }
 
     void Update()

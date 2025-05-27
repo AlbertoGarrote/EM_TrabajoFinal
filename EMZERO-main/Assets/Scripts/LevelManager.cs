@@ -22,10 +22,10 @@ public class LevelManager : MonoBehaviour
 
     [Header("Team Settings")]
     [Tooltip("Número de jugadores humanos")]
-    [SerializeField] private int numberOfHumans = 2;
+    private int numberOfHumans;
 
     [Tooltip("Número de zombis")]
-    [SerializeField] private int numberOfZombies = 2;
+    private int numberOfZombies;
 
     [Header("Game Mode Settings")]
     [Tooltip("Selecciona el modo de juego")]
@@ -125,33 +125,11 @@ public class LevelManager : MonoBehaviour
 
 
 
-        if(NetworkManager.Singleton.IsServer)
+        if (NetworkManager.Singleton.IsServer)
             SpawnTeams();
 
         //createPlayersPrefabs();
         UpdateTeamUI();
-    }
-    public void createPlayersPrefabs()
-    {
-        //Debug.Log(GameManager.Instance.playerNumber);
-        if (GameManager.Instance == null)
-        {
-            Debug.Log("NO SE PUEDE");
-        }
-        else
-        {
-
-
-            if (NetworkManager.Singleton.IsServer)
-            {
-
-                foreach (var id in GameManager.Instance.clientIds)
-                {
-                    
-                }
-
-            }
-        }
     }
     private void Update()
     {
@@ -212,20 +190,30 @@ public class LevelManager : MonoBehaviour
 
     public void ChangeToZombie(GameObject human, bool enabled)
     {
-        Debug.Log("Cambiando a Zombie");
+        
 
         if (human != null)
         {
+            Debug.Log("Cambiando a Zombie");
             // Guardar la posición, rotación y uniqueID del humano actual
             Vector3 playerPosition = human.transform.position;
             Quaternion playerRotation = human.transform.rotation;
             string uniqueID = human.GetComponent<PlayerController>().uniqueID;
+            Transform cam = human.GetComponent<PlayerController>().cameraTransform;
+            ulong id = human.GetComponent<PlayerController>().id;
 
             // Destruir el humano actual
+            //
+            DestroyPlayerCamera(id,human.GetComponent<PlayerController>());
             Destroy(human);
+
 
             // Instanciar el prefab del zombie en la misma posición y rotación
             GameObject zombie = Instantiate(zombiePrefab, playerPosition, playerRotation);
+            //ulong id = zombie.GetComponent<PlayerController>().id;
+            zombie.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
+
+
             if (enabled) { zombie.tag = "Player"; }
 
             // Obtener el componente PlayerController del zombie instanciado
@@ -239,30 +227,6 @@ public class LevelManager : MonoBehaviour
                 numberOfZombies++; // Aumentar el número de zombis
                 UpdateTeamUI();
 
-                if (enabled)
-                {
-                    // Obtener la referencia a la cámara principal
-                    Camera mainCamera = Camera.main;
-
-                    if (mainCamera != null)
-                    {
-                        // Obtener el script CameraController de la cámara principal
-                        CameraController cameraController = mainCamera.GetComponent<CameraController>();
-
-                        if (cameraController != null)
-                        {
-                            // Asignar el zombie al script CameraController
-                            cameraController.player = zombie.transform;
-                        }
-
-                        // Asignar el transform de la cámara al PlayerController
-                        playerController.cameraTransform = mainCamera.transform;
-                    }
-                    else
-                    {
-                        Debug.LogError("No se encontró la cámara principal.");
-                    }
-                }
             }
             else
             {
@@ -272,6 +236,30 @@ public class LevelManager : MonoBehaviour
         else
         {
             Debug.LogError("No se encontró el humano actual.");
+        }
+    }
+
+    public void DestroyPlayerCamera(ulong targetClientId, PlayerController player)
+    {
+        var clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new[] { targetClientId }
+            }
+        };
+
+        
+        DestroyClientCameraClientRpc(player, clientRpcParams);
+    }
+
+    [ClientRpc]
+    void DestroyClientCameraClientRpc(PlayerController player, ClientRpcParams clientRpcParams)
+    {
+        if (!NetworkManager.Singleton.IsServer)
+        {
+            Transform cam = player.cameraTransform;
+            Destroy(cam.gameObject);
         }
     }
 
@@ -348,6 +336,7 @@ public class LevelManager : MonoBehaviour
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientName;
+            player.GetComponent<PlayerController>().id = id;
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
 
             //GameObject camObject = Instantiate(camPrefab);
@@ -409,29 +398,37 @@ public class LevelManager : MonoBehaviour
     private void SpawnTeams()
     {
         Debug.Log("Instanciando equipos");
-
-        numberOfZombies = 0;
-        numberOfHumans = GameManager.Instance.clientIds.Count;
-
+        int playerNumber = GameManager.Instance.clientIds.Count;
+        if(playerNumber % 2 == 0)
+        {
+            numberOfHumans = playerNumber / 2;
+            numberOfZombies = playerNumber / 2;
+        }
+        else
+        {
+            numberOfHumans = playerNumber / 2;
+            numberOfZombies = (playerNumber / 2) + 1;
+        }
         //if (humanSpawnPoints.Count <= 0) { return; }
         //SpawnPlayer(humanSpawnPoints[0], playerPrefab);
         //Debug.Log($"Personaje jugable instanciado en {humanSpawnPoints[0]}");
 
-        for (int i = 0; i < numberOfHumans; i++)
+        int n = 0;
+        for (int i = 0; i < numberOfHumans; i++, n++)
         {
             if (i < humanSpawnPoints.Count)
             {
-                ulong id = GameManager.Instance.clientIds[i];
+                ulong id = GameManager.Instance.clientIds[n];
                 Debug.Log($"Creando humano para el jugador {id}");
                 SpawnPlayer(humanSpawnPoints[i], playerPrefab, id);
             }
         }
 
-        for (int i = 0; i < numberOfZombies; i++)
+        for (int i = 0; i < numberOfZombies; i++, n++)
         {
             if (i < zombieSpawnPoints.Count)
             {
-                ulong id = GameManager.Instance.clientIds[i];
+                ulong id = GameManager.Instance.clientIds[n];
                 SpawnPlayer(zombieSpawnPoints[i], zombiePrefab, id);
             }
         }
