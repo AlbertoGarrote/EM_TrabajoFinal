@@ -111,7 +111,9 @@ public class GameManager : NetworkBehaviour
         }
 
     }
-
+    public void StartHost()
+    { 
+    }
     public void startClient()
     {
         if(!thisClientStarted)
