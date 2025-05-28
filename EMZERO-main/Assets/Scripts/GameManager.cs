@@ -4,6 +4,8 @@ using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
+
 
 
 public class GameManager : NetworkBehaviour
@@ -35,6 +37,10 @@ public class GameManager : NetworkBehaviour
     bool serverStarted = false;
     bool thisClientStarted = false;
     bool thisClientHasName = false;
+
+    public bool gameStarted = false;
+
+    bool isStarted = false;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -50,12 +56,37 @@ public class GameManager : NetworkBehaviour
 
         _networkManager.OnClientConnectedCallback += OnPlayerConnect;
         _networkManager.OnClientDisconnectCallback += OnPlayerDisconnect;
+        //
+        uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
 
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        onlineInfoText = GameObject.FindWithTag("onlineInfo");
         onlineTypeInfo = onlineInfoText.GetComponentsInChildren<TMP_Text>()[0];
         onlinePlayerNumberInfo = onlineInfoText.GetComponentsInChildren<TMP_Text>()[1];
-        onlineInfoText.SetActive(false);
-        
-        uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
+        if (!isStarted)
+        {
+            onlineInfoText.SetActive(false);
+            isStarted = true;
+        }
+
+        if(NetworkManager.Singleton.IsHost)
+        {
+
+            onlineTypeInfo.text = $"{clientName} [Servidor]";
+            onlinePlayerNumberInfo.text = onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
+
+        }
+        else
+        {
+            onlineTypeInfo.text = $"{clientName}";
+            onlinePlayerNumberInfo.text = "Conectado!";
+        }
+
+
     }
 
     // Update is called once per frame
@@ -69,11 +100,11 @@ public class GameManager : NetworkBehaviour
         if (!serverStarted)
         {
             clientName = uniqueIdGenerator.GenerateUniqueID();
-            _networkManager.StartServer();
+            _networkManager.StartHost();
             serverStarted = true;
             Debug.Log($"Iniciado el servidor");
             onlineTypeInfo.text = $"{clientName} [Servidor]";
-            onlinePlayerNumberInfo.text = $"Jugadores: 0/{minPlayerNumber}";
+           
             onlineInfoText.SetActive(true);
             onlinePlayerNumberInfo.gameObject.SetActive(true);
             
@@ -167,14 +198,17 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void ConnectPlayerClientRpc(string message, ClientRpcParams clientRpcParams = default)
     {
-        clientName = message;
-        onlineTypeInfo.text = message;
-        onlinePlayerNumberInfo.text = "Conectado!";
-        thisClientStarted = true;
-        thisClientHasName = true;
-        onlineInfoText.SetActive(true);
-    }
+        if(!IsHost)
+        {
+            clientName = message;
+            onlineTypeInfo.text = message;
+            onlinePlayerNumberInfo.text = "Conectado!";
+            thisClientStarted = true;
+            thisClientHasName = true;
+            onlineInfoText.SetActive(true);
+        }
 
+    }
 
 
 

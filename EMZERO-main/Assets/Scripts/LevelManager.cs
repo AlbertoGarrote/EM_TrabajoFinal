@@ -12,9 +12,17 @@ public enum GameMode
     Monedas
 }
 
-public class LevelManager : MonoBehaviour
+public enum Team
+{
+    Human,
+    Zombie,
+    ConvertedZombie
+}
+
+public class LevelManager : NetworkBehaviour
 {
     #region Properties
+    public const int GAMEOVER_DESCONEXION = 0, GAMEOVER_ZOMBIES = 1, GAMEOVER_TIEMPO = 2, GAMEOVER_MONEDAS = 3;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject playerPrefab;
@@ -22,10 +30,10 @@ public class LevelManager : MonoBehaviour
 
     [Header("Team Settings")]
     [Tooltip("Número de jugadores humanos")]
-    private int numberOfHumans;
+    private int numberOfHumans = 0;
 
     [Tooltip("Número de zombis")]
-    private int numberOfZombies;
+    private int numberOfZombies = 0;
 
     [Header("Game Mode Settings")]
     [Tooltip("Selecciona el modo de juego")]
@@ -46,6 +54,7 @@ public class LevelManager : MonoBehaviour
     private TextMeshProUGUI gameModeText;
 
     private int CoinsGenerated = 0;
+    private int TotalCoinsCollected = 0;
 
     public string PlayerPrefabName => playerPrefab.name;
     public string ZombiePrefabName => zombiePrefab.name;
@@ -59,6 +68,9 @@ public class LevelManager : MonoBehaviour
     private bool isGameOver = false;
 
     public GameObject gameOverPanel; // Asigna el panel desde el inspector
+    [SerializeField] private TMP_Text gameOverText, reasonText;
+
+    private Dictionary<ulong, Team> teams = new Dictionary<ulong, Team>();
 
     #endregion
 
@@ -73,6 +85,9 @@ public class LevelManager : MonoBehaviour
 
         // Obtener la referencia al LevelBuilder
         levelBuilder = GetComponent<LevelBuilder>();
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
+
+
 
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }
@@ -80,6 +95,7 @@ public class LevelManager : MonoBehaviour
     private void Start()
     {
         Debug.Log("Iniciando el nivel");
+
         // Buscar el objeto "CanvasPlayer" en la escena
         GameObject canvas = GameObject.Find("CanvasPlayer");
         if (canvas != null)
@@ -129,7 +145,10 @@ public class LevelManager : MonoBehaviour
             SpawnTeams();
 
         //createPlayersPrefabs();
-        UpdateTeamUI();
+        if (NetworkManager.Singleton.IsServer)
+        {
+            UpdateGlobalTeamUI();
+        }
     }
     private void Update()
     {
@@ -170,11 +189,17 @@ public class LevelManager : MonoBehaviour
                 Debug.Log("El jugador actual no es un zombie.");
             }
         }
-        UpdateTeamUI();
-
-        if (isGameOver)
+        if (NetworkManager.Singleton.IsServer)
         {
-            ShowGameOverPanel();
+            UpdateGlobalTeamUI();
+        }
+
+
+
+
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            GlobalGameOver(GAMEOVER_MONEDAS);
         }
     }
 
@@ -190,7 +215,7 @@ public class LevelManager : MonoBehaviour
 
     public void ChangeToZombie(GameObject human, bool enabled)
     {
-        
+
 
         if (human != null)
         {
@@ -202,9 +227,9 @@ public class LevelManager : MonoBehaviour
             Transform cam = human.GetComponent<PlayerController>().cameraTransform;
             ulong id = human.GetComponent<PlayerController>().id;
 
+            //teams[id] = Team.ConvertedZombie;
+            
             // Destruir el humano actual
-            //
-            DestroyPlayerCamera(id,human.GetComponent<PlayerController>());
             Destroy(human);
 
 
@@ -225,7 +250,19 @@ public class LevelManager : MonoBehaviour
                 playerController.uniqueID = uniqueID; // Mantener el identificador único
                 numberOfHumans--; // Reducir el número de humanos
                 numberOfZombies++; // Aumentar el número de zombis
-                UpdateTeamUI();
+                if(numberOfHumans == 0)
+                {
+                    GlobalGameOver(GAMEOVER_ZOMBIES);
+                }
+                else
+                {
+                    UpdateDictionaryClientRpc(id, Team.ConvertedZombie);
+                }
+
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    UpdateGlobalTeamUI();
+                }
 
             }
             else
@@ -236,30 +273,6 @@ public class LevelManager : MonoBehaviour
         else
         {
             Debug.LogError("No se encontró el humano actual.");
-        }
-    }
-
-    public void DestroyPlayerCamera(ulong targetClientId, PlayerController player)
-    {
-        var clientRpcParams = new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams
-            {
-                TargetClientIds = new[] { targetClientId }
-            }
-        };
-
-        
-        DestroyClientCameraClientRpc(player, clientRpcParams);
-    }
-
-    [ClientRpc]
-    void DestroyClientCameraClientRpc(PlayerController player, ClientRpcParams clientRpcParams)
-    {
-        if (!NetworkManager.Singleton.IsServer)
-        {
-            Transform cam = player.cameraTransform;
-            Destroy(cam.gameObject);
         }
     }
 
@@ -326,17 +339,18 @@ public class LevelManager : MonoBehaviour
 
     private void SpawnPlayer(Vector3 spawnPosition, GameObject prefab, ulong id)
     {
-        
+
         Debug.Log($"Instanciando jugador en {spawnPosition}");
         if (prefab != null)
         {
-            
+
             Debug.Log($"Instanciando jugador en {spawnPosition}");
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientName;
             player.GetComponent<PlayerController>().id = id;
+            player.GetComponent<PlayerController>().SubscribeToOnCoinPicked(AddTotalCoinClientRpc);
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
 
             //GameObject camObject = Instantiate(camPrefab);
@@ -389,17 +403,17 @@ public class LevelManager : MonoBehaviour
         }
 
         else
-            {
+        {
             Debug.LogError("Faltan referencias al prefab o al punto de aparición.");
         }
-            
+
     }
 
     private void SpawnTeams()
     {
         Debug.Log("Instanciando equipos");
         int playerNumber = GameManager.Instance.clientIds.Count;
-        if(playerNumber % 2 == 0)
+        if (playerNumber % 2 == 0)
         {
             numberOfHumans = playerNumber / 2;
             numberOfZombies = playerNumber / 2;
@@ -421,6 +435,8 @@ public class LevelManager : MonoBehaviour
                 ulong id = GameManager.Instance.clientIds[n];
                 Debug.Log($"Creando humano para el jugador {id}");
                 SpawnPlayer(humanSpawnPoints[i], playerPrefab, id);
+                teams.Add(id, Team.Human);
+                AddDictionaryClientRpc(id, Team.Human);
             }
         }
 
@@ -429,7 +445,10 @@ public class LevelManager : MonoBehaviour
             if (i < zombieSpawnPoints.Count)
             {
                 ulong id = GameManager.Instance.clientIds[n];
+                Debug.Log($"Creando zombie para el jugador {id}");
                 SpawnPlayer(zombieSpawnPoints[i], zombiePrefab, id);
+                teams.Add(id, Team.Zombie);
+                AddDictionaryClientRpc(id, Team.Zombie);
             }
         }
     }
@@ -451,19 +470,32 @@ public class LevelManager : MonoBehaviour
         }
     }
     ^*/
-    private void UpdateTeamUI()
+    private void UpdateTeamUI(int humans, int zombies)
     {
+        //Debug.Log("Actualizar ui");
         if (humansText != null)
         {
-            humansText.text = $"{numberOfHumans}";
+            humansText.text = $"{humans}";
         }
 
         if (zombiesText != null)
         {
-            zombiesText.text = $"{numberOfZombies}";
+            zombiesText.text = $"{zombies}";
         }
     }
 
+    [Rpc(SendTo.NotServer)]
+    public void UpdateUIClientRpc(int humans, int zombies)
+    {
+        Debug.Log("Actualizar ui");
+        UpdateTeamUI(humans, zombies);
+    }
+
+    public void UpdateGlobalTeamUI()
+    {
+        UpdateTeamUI(numberOfHumans, numberOfZombies);
+        UpdateUIClientRpc(numberOfHumans, numberOfZombies);
+    }
     #endregion
 
     #region Modo de juego
@@ -479,7 +511,7 @@ public class LevelManager : MonoBehaviour
         // Comprobar si el tiempo ha llegado a cero
         if (remainingSeconds <= 0)
         {
-            isGameOver = true;
+            GlobalGameOver(GAMEOVER_TIEMPO);
             remainingSeconds = 0;
         }
 
@@ -500,42 +532,166 @@ public class LevelManager : MonoBehaviour
         if (isGameOver) return;
 
         // Implementar la lógica para el modo de juego basado en monedas
-        if (gameModeText != null && playerController != null)
+        if (gameModeText != null)
         {
-            gameModeText.text = $"{playerController.CoinsCollected}/{CoinsGenerated}";
-            if (playerController.CoinsCollected == CoinsGenerated)
+            gameModeText.text = $"{TotalCoinsCollected}/{CoinsGenerated}";
+            if (TotalCoinsCollected == CoinsGenerated)
             {
-                isGameOver = true;
+                GlobalGameOver(GAMEOVER_MONEDAS);
             }
         }
     }
 
-    private void ShowGameOverPanel()
+    public void GlobalGameOver(int reason)
+    {
+        if (isGameOver == true) return;
+
+        isGameOver = true;
+        if (IsServer)
+        {
+            //ShowGameOverPanel(reason);
+            ShowGameOverPanelClientRpc(reason);
+        }
+    }
+    private void ShowGameOverPanel(int reason)
     {
         if (gameOverPanel != null)
         {
-            Time.timeScale = 0f;
-            gameOverPanel.SetActive(true); // Muestra el panel de pausa
 
+            gameOverPanel.SetActive(true); // Muestra el panel de pausa
+            Team team = teams[NetworkManager.LocalClientId];
+            switch (reason)
+            {
+                case 0:
+                    gameOverText.text = "Fin de la partida";
+                    reasonText.text = "Un bando se ha desconectado";
+                    break;
+                case 1:
+
+                    if (team == Team.ConvertedZombie)
+                    {
+                        gameOverText.text = "Victoria parcial";
+                    }
+                    else if (team == Team.Zombie)
+                    {
+                        gameOverText.text = "¡Victoria!";
+                    }
+                    else
+                    {
+                        gameOverText.text = "Derrota...";
+                    }
+                    reasonText.text = "Los zombies han convertido a todos los humanos.";
+                    break;
+                case 2:
+
+                    if (team == Team.Human)
+                    {
+                        gameOverText.text = "¡Victoria!";
+                    }
+                    else
+                    {
+                        gameOverText.text = "Derrota...";
+                    }
+                    reasonText.text = "¡Los humanos han sobrevivido!";
+                    break;
+                case 3:
+
+                    if (team == Team.Human)
+                    {
+                        gameOverText.text = "¡Victoria!";
+                    }
+                    else
+                    {
+                        gameOverText.text = "Derrota...";
+                    }
+                    reasonText.text = "¡Los humanos han conseguido todas las monedas!";
+                    break;
+            }
+            Time.timeScale = 0f;
             // Gestión del cursor
             Cursor.lockState = CursorLockMode.None; // Desbloquea el cursor
             Cursor.visible = true; // Hace visible el cursor
         }
     }
 
+    [ClientRpc]
+    private void ShowGameOverPanelClientRpc(int reason)
+    {
+        ShowGameOverPanel(reason);
+    }
+
     public void ReturnToMainMenu()
     {
         // Gestión del cursor
-        Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor
-        Cursor.visible = false; // Oculta el cursor
+        //Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor
+        //Cursor.visible = false; // Oculta el cursor
 
         // Cargar la escena del menú principal
         SceneManager.LoadScene("MenuScene"); // Cambia "MenuScene" por el nombre de tu escena principal
     }
 
+    public void OnPlayerDisconnect(ulong clientId)
+    {
+        if (NetworkManager.Singleton.IsServer)
+        {
+            Console.WriteLine($"Jugador {clientId} desconectado");
+            if (teams.ContainsKey(clientId))
+            {
+                Team team = teams[clientId];
+                Console.WriteLine($"Restando 1 {team}");
+                if (team == Team.Human)
+                {
+                    numberOfHumans--;
+                }
+                else
+                {
+                    numberOfZombies--;
+                }
+                if (numberOfHumans == 0 || numberOfZombies == 0)
+                {
+                    GlobalGameOver(0);
+                }
+                else
+                {
+                    UpdateGlobalTeamUI();
+                }
+                teams.Remove(clientId);
+                RemoveDictionaryClientRpc(clientId);
+            }
+
+        }
+    }
+    [ClientRpc]
+    void UpdateDictionaryClientRpc(ulong id, Team team)
+    {
+        
+            teams[id] = team;
+    }
+
+    [ClientRpc]
+    void AddDictionaryClientRpc(ulong id, Team team)
+    {
+        if (!IsHost)
+            teams.Add(id, team);
+    }
+    [ClientRpc]
+    void RemoveDictionaryClientRpc(ulong id)
+    {
+        if (!IsHost)
+            teams.Remove(id);
+    }
+
+    
+    [ClientRpc]
+    void AddTotalCoinClientRpc()
+    {
+        TotalCoinsCollected++;
+    }
+    
     #endregion
 
 }
+
 
 
 

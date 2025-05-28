@@ -37,7 +37,7 @@ public class LevelBuilder : NetworkBehaviour
 
     [Header("Room Settings")]
     [Tooltip("Número total de salas")]
-    [SerializeField] private int numberOfRooms = 4;
+    [SerializeField] private int numberOfRooms;
 
     [Tooltip("Ancho de cada sala")]
     [SerializeField] private int roomWidth = 5;
@@ -74,6 +74,7 @@ public class LevelBuilder : NetworkBehaviour
 
     public void Build()
     {
+        //numberOfRooms = GameManager.Instance.clientIds.Count * 2;
         CreateRooms(roomWidth, roomLength, numberOfRooms);
     }
 
@@ -292,7 +293,7 @@ public class LevelBuilder : NetworkBehaviour
         /// <summary>
         /// Coloca monedas en las baldosas del suelo.
         /// </summary>
-        private void CreateCoin(int x, int z, int width, int length, Vector3 tilePosition)
+    private void CreateCoin(int x, int z, int width, int length, Vector3 tilePosition)
     {
         bool widthBorderCondition = x > 0 && x < (width - 1);
         bool lengthBorderCondition = z > 0 && z < (length - 1);
@@ -309,10 +310,18 @@ public class LevelBuilder : NetworkBehaviour
             if (!isPositionOccupied) // Si no hay obstáculos, colocar la moneda
             {
                 PlaceNetworkElement(coinPrefab, tilePosition.x, tilePosition.z, Quaternion.identity);
-                CoinsGenerated++;
+                AddCoinClientRpc();
             }
         }
     }
+
+    [ClientRpc]
+    void AddCoinClientRpc()
+    {
+        CoinsGenerated++;
+    }
+
+
 
     /// <summary>
     /// Determina si se debe colocar un ítem decorativo basado en la densidad configurada.

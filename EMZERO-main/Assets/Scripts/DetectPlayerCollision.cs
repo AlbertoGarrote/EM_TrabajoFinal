@@ -13,7 +13,8 @@ public class DetectPlayerCollision : MonoBehaviour
             PlayerController player = other.GetComponent<PlayerController>();
             if (player != null && !player.isZombie) // Verifica si el jugador no es un zombie
             {
-                player.CoinCollected();
+                //player.CoinCollected();
+                player.CollectCoinClientRpc();
                 AudioSource.PlayClipAtPoint(pickupSound, transform.position);
                 Destroy(gameObject); // Elimina la moneda de la escena
             }
