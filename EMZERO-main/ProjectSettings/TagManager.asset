@@ -8,6 +8,7 @@ TagManager:
   - Camera
   - HostCamera
   - onlineInfo
+  - codeText
   layers:
   - Default
   - TransparentFX
