@@ -289,6 +289,26 @@ public class GameManager : NetworkBehaviour
         menu.addPlayerToLobby(name);
     }
 
+    [ClientRpc]
+    public void PauseGameClientRpc(GameObject pausePanel)
+    {
+        
+        pausePanel.SetActive(true); // Muestra el panel de pausa
+        Time.timeScale = 0f; // Detiene el tiempo en el juego
 
+        // Gestión del cursor
+        Cursor.lockState = CursorLockMode.None; // Desbloquea el cursor
+        Cursor.visible = true; // Hace visible el cursor
+    }
 
+    [ClientRpc]
+    public void ResumeGameClientRpc(GameObject pausePanel)
+    {
+        pausePanel.SetActive(false); // Oculta el panel de pausa
+        Time.timeScale = 1f; // Reactiva el tiempo en el juego
+
+        // Gestión del cursor
+        Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor
+        Cursor.visible = false; // Oculta el cursor
+    }
 }
