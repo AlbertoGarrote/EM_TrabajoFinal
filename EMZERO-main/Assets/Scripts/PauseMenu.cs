@@ -40,6 +40,7 @@ public class PauseMenu : MonoBehaviour
         // Opcional: Asegúrate de que el tiempo está restaurado antes de salir
         Time.timeScale = 1f;
         GameManager.Instance.disconectSelf();
+        MenuManager.Instance.ResetHostButton();
         SceneManager.LoadScene("MenuScene"); // Cambia "MainMenu" por el nombre de tu escena principal
     }
 }
