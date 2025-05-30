@@ -186,6 +186,7 @@ public class GameManager : NetworkBehaviour
         }
         if (_networkManager.IsServer)
         {
+            
             _networkManager.Shutdown();
             Debug.Log("Se ha desconectado el servidor");
         }
@@ -309,7 +310,7 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void ResumeGameClientRpc()
     {
-        pausePanel.GetComponentInChildren<TMP_Text>().text = "EL HOST HA PAUSADO EL JUEGO";
+        pausePanel.GetComponentsInChildren<TMP_Text>()[0].text = "EL HOST HA PAUSADO EL JUEGO";
         if(!IsHost)
         {
             pausePanel.GetComponentsInChildren<Button>()[0].interactable = false;

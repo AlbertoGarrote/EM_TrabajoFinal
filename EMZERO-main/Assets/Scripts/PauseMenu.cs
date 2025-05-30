@@ -36,8 +36,9 @@ public class PauseMenu : MonoBehaviour
         }
         else
         {
-            pausePanel.GetComponentInChildren<TMP_Text>().text = "PAUSA";
-            pausePanel.GetComponentsInChildren<Button>()[0].interactable = false;
+            pausePanel.GetComponentsInChildren<TMP_Text>(true)[0].text = "PAUSA";
+
+            pausePanel.GetComponentsInChildren<Button>(true)[0].interactable = false;
 
             pausePanel.SetActive(true); // Muestra el panel de pausa
             Time.timeScale = 0f; // Detiene el tiempo en el juego
@@ -72,6 +73,7 @@ public class PauseMenu : MonoBehaviour
     {
         // Opcional: Asegúrate de que el tiempo está restaurado antes de salir
         Time.timeScale = 1f;
+        
         GameManager.Instance.disconectSelf();
         MenuManager.Instance.ResetHostButton();
         SceneManager.LoadScene("MenuScene"); // Cambia "MainMenu" por el nombre de tu escena principal
