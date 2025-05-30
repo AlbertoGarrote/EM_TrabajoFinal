@@ -40,7 +40,7 @@ public class PauseMenu : MonoBehaviour
             isPaused = true;
             pausePanel.GetComponentsInChildren<TMP_Text>(true)[0].text = "PAUSA";
 
-            pausePanel.GetComponentsInChildren<Button>(true)[0].interactable = false;
+            pausePanel.GetComponentsInChildren<Button>(true)[0].interactable = true;
 
             pausePanel.SetActive(true); // Muestra el panel de pausa
             Time.timeScale = 0f; // Detiene el tiempo en el juego
@@ -62,7 +62,7 @@ public class PauseMenu : MonoBehaviour
             isPaused = false;
 
         }
-        else
+        else if(!GameManager.Instance.hostPaused)
         {
             pausePanel.SetActive(false); // Oculta el panel de pausa
             Time.timeScale = 1f; // Reactiva el tiempo en el juego
