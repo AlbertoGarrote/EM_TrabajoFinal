@@ -12,6 +12,7 @@ using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine.UI;
+using Unity.Collections;
 
 public class GameManager : NetworkBehaviour
 {
@@ -32,10 +33,11 @@ public class GameManager : NetworkBehaviour
     // Start is called before the first frame update
     public static GameManager Instance { get; private set; }
     [SerializeField] NetworkManager _networkManager;
-    [SerializeField] GameObject humanPrefab, zombiePrefab, onlineInfoText, inputCodeObj;
+    [SerializeField] GameObject humanPrefab, zombiePrefab, inputCodeObj;
     [SerializeField] TMP_InputField inputCode;
+    [SerializeField] MenuManager menu;
     public List<ulong> clientIds;
-    TMP_Text onlinePlayerNumberInfo, onlineTypeInfo;
+    public Dictionary<ulong, string> clientNames;   
     public string clientName;
     private UniqueIdGenerator uniqueIdGenerator;
     public int minPlayerNumber = 4;
@@ -47,6 +49,8 @@ public class GameManager : NetworkBehaviour
     public bool gameStarted = false;
 
     bool isStarted = false;
+
+    string joinCode;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -59,43 +63,31 @@ public class GameManager : NetworkBehaviour
         DontDestroyOnLoad(gameObject);
 
         clientIds = new List<ulong>();
+        clientNames = new Dictionary<ulong, string>();
 
         _networkManager.OnClientConnectedCallback += OnPlayerConnect;
         _networkManager.OnClientDisconnectCallback += OnPlayerDisconnect;
 
         uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
-
+        menu.startHost = startServer;
         SceneManager.sceneLoaded += OnSceneLoaded;
+
+        
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        onlineInfoText = GameObject.FindWithTag("onlineInfo");
-        inputCodeObj = GameObject.FindWithTag("codeText"); // cuadro de texto codigo
-        inputCode = inputCodeObj.GetComponentInChildren<TMP_InputField>();
-        onlineTypeInfo = onlineInfoText.GetComponentsInChildren<TMP_Text>()[0];
-        onlinePlayerNumberInfo = onlineInfoText.GetComponentsInChildren<TMP_Text>()[1];
         
+        //inputCodeObj = GameObject.FindWithTag("codeText"); // cuadro de texto codigo
+        //inputCode = inputCodeObj.GetComponentInChildren<TMP_InputField>();
+
 
         if (!isStarted)
         {
-            onlineInfoText.SetActive(false);
             isStarted = true;
         }
 
-        if (NetworkManager.Singleton.IsHost)
-        {
-
-            onlineTypeInfo.text = $"{clientName} [Servidor]";
-            onlinePlayerNumberInfo.text = onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
-
-        }
-        else
-        {
-            onlineTypeInfo.text = $"{clientName}";
-            onlinePlayerNumberInfo.text = "Conectado!";
-        }
-
+     
 
     }
 
@@ -125,7 +117,7 @@ public class GameManager : NetworkBehaviour
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
                 }
                 Allocation allocation = await RelayService.Instance.CreateAllocationAsync(10); // Este es el numero maximo de jugadores
-                string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+                joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
                 Debug.Log(joinCode);
                 RelayServerData relayServerData = new RelayServerData(allocation, "dtls");
                 _networkManager.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
@@ -136,8 +128,13 @@ public class GameManager : NetworkBehaviour
                 Debug.Log(e);
             }
 
-            onlineInfoText.SetActive(true);
-            onlinePlayerNumberInfo.gameObject.SetActive(true);
+
+            clientName = uniqueIdGenerator.GenerateUniqueID();
+            if(!clientNames.ContainsKey(0)) clientNames.Add(0, clientName);
+            menu.ChangeLobbyName(clientName, joinCode);
+            menu.StartHostButton();
+            menu.ChangePlayerName(clientName, true);
+            menu.addPlayerToLobby(clientName);
 
         }
 
@@ -180,7 +177,6 @@ public class GameManager : NetworkBehaviour
         if (_networkManager.IsClient)
         {
             _networkManager.Shutdown();
-            onlinePlayerNumberInfo.text = "";
             thisClientStarted = false;
         }
         if (_networkManager.IsServer)
@@ -200,10 +196,16 @@ public class GameManager : NetworkBehaviour
             Debug.Log($"Se ha conectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
-            onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
 
-            if (!thisClientHasName)
-                CreateClientID(clientId);
+            if (!clientNames.ContainsKey(clientId) && clientId != 0)
+            {
+                string clientName = CreateClientID(clientId);
+                clientNames.Add(clientId, clientName);
+                menu.addPlayerToLobby(clientName);
+                AddPlayerClientRpc(clientName);
+            }
+
+
         }
     }
 
@@ -216,9 +218,9 @@ public class GameManager : NetworkBehaviour
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
-            onlinePlayerNumberInfo.text = $"Jugadores: {clientIds.Count}/{minPlayerNumber}";
-
+            RemovePlayerClientRpc(name);
         }
+
     }
 
 
@@ -235,7 +237,7 @@ public class GameManager : NetworkBehaviour
             clientIds.Remove(clientid);
     }
 
-    public void CreateClientID(ulong targetClientId)
+    public string CreateClientID(ulong targetClientId)
     {
         var clientRpcParams = new ClientRpcParams
         {
@@ -246,22 +248,45 @@ public class GameManager : NetworkBehaviour
         };
 
         string clientName = uniqueIdGenerator.GenerateUniqueID();
-        ConnectPlayerClientRpc(clientName, clientRpcParams);
+        List<FixedString128Bytes> clientNamesParameter = new List<FixedString128Bytes>();
+        foreach(GameObject player in menu.players)
+        {
+            clientNamesParameter.Add(player.GetComponentInChildren<TMP_Text>().text);
+        }
+        ConnectPlayerClientRpc(clientName, clientNamesParameter.ToArray() , clientNames[0], clientRpcParams);
+        return clientName;
     }
 
     [ClientRpc]
-    private void ConnectPlayerClientRpc(string message, ClientRpcParams clientRpcParams = default)
+    private void ConnectPlayerClientRpc(string message, FixedString128Bytes[] currentPlayers, string lobbyName, ClientRpcParams clientRpcParams = default)
     {
         if (!IsHost)
         {
             clientName = message;
-            onlineTypeInfo.text = message;
-            onlinePlayerNumberInfo.text = "Conectado!";
             thisClientStarted = true;
             thisClientHasName = true;
-            onlineInfoText.SetActive(true);
+            foreach(FixedString128Bytes player in currentPlayers)
+            {
+                menu.addPlayerToLobby(player.ToString());
+            }
+            menu.StartClientButton();
+            menu.ChangePlayerName(clientName, false);
+            menu.ChangeLobbyName(lobbyName);
         }
 
+    }
+
+    [ClientRpc]
+    private void RemovePlayerClientRpc(string name)
+    {
+        menu.RemovePlayerFromLobby(name);
+    }
+
+    [ClientRpc]
+    private void AddPlayerClientRpc(string name)
+    {
+        if(!IsHost)
+        menu.addPlayerToLobby(name);
     }
 
 
