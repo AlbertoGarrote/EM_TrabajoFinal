@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -26,13 +27,39 @@ public class PauseMenu : MonoBehaviour
     public void PauseGame()
     {
         isPaused = true;
-        GameManager.Instance.PauseGameClientRpc();
+        if (NetworkManager.Singleton.IsHost)
+        {
+            GameManager.Instance.PauseGameClientRpc();
+        }else
+        {
+            
+            pausePanel.SetActive(true); // Muestra el panel de pausa
+            Time.timeScale = 0f; // Detiene el tiempo en el juego
+
+            // Gestión del cursor
+            Cursor.lockState = CursorLockMode.None; // Desbloquea el cursor
+            Cursor.visible = true; // Hace visible el cursor
+        }
+   
+
     }
 
     public void ResumeGame()
     {
         isPaused = false;
-        GameManager.Instance.ResumeGameClientRpc();
+        if (NetworkManager.Singleton.IsHost)
+        {
+            GameManager.Instance.ResumeGameClientRpc();
+        }
+        else
+        {
+            pausePanel.SetActive(false); // Oculta el panel de pausa
+            Time.timeScale = 1f; // Reactiva el tiempo en el juego
+
+            // Gestión del cursor
+            Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor
+            Cursor.visible = false; // Oculta el cursor
+        }
     }
 
     public void QuitGame()

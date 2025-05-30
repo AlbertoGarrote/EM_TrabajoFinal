@@ -316,4 +316,6 @@ public class GameManager : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor
         Cursor.visible = false; // Oculta el cursor
     }
+
+
 }
