@@ -150,6 +150,7 @@ public class LevelManager : NetworkBehaviour
         {
             UpdateGlobalTeamUI();
         }
+       
     }
     private void Update()
     {
@@ -561,7 +562,9 @@ public class LevelManager : NetworkBehaviour
         if (gameOverPanel != null)
         {
             Button returnButton = gameOverPanel.GetComponentInChildren<Button>();
-            if(IsHost)
+            returnButton.GetComponent<Button>().onClick.RemoveAllListeners();
+            returnButton.GetComponent<Button>().onClick.AddListener(ReturnToMainMenu);
+            if (IsHost)
             {
                 returnButton.interactable = true;
                 returnButton.GetComponentInChildren<TMP_Text>().text = "Volver al menú";
@@ -623,6 +626,8 @@ public class LevelManager : NetworkBehaviour
                     reasonText.text = "El host se ha desconectado.";
                     returnButton.interactable = true;
                     returnButton.GetComponentInChildren<TMP_Text>().text = "Volver al menú";
+                    returnButton.GetComponent<Button>().onClick.RemoveAllListeners();
+                    returnButton.GetComponent<Button>().onClick.AddListener(()=>SceneManager.LoadScene("MenuScene"));
                     break;
             }
             Time.timeScale = 0f;
