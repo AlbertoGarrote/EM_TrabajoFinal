@@ -54,6 +54,7 @@ public class GameManager : NetworkBehaviour
     string joinCode;
     GameObject pausePanel;
     public bool hostPaused;
+    public static event Action OnHostResume;
 
     public Action onHostDisconnect;
     void Awake()
@@ -325,7 +326,9 @@ public class GameManager : NetworkBehaviour
     public void ResumeGameClientRpc()
     {
         hostPaused = false;
+        OnHostResume?.Invoke();
         pausePanel.SetActive(false); // Oculta el panel de pausa
+        
         Time.timeScale = 1f; // Reactiva el tiempo en el juego
 
         // Gestión del cursor

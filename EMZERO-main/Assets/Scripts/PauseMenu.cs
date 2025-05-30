@@ -10,12 +10,17 @@ public class PauseMenu : MonoBehaviour
     public GameObject pausePanel; // Asigna el panel desde el inspector
 
     private bool isPaused = false;
-
+    
+    private void OnEnable()
+    {
+        GameManager.OnHostResume += HandleHostResume;
+    }
     void Update()
     {
         // Detecta si el jugador presiona la tecla Escape o Pausa
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            if (GameManager.Instance.hostPaused) { return; }
             if (isPaused)
             {
                 ResumeGame();
@@ -82,5 +87,9 @@ public class PauseMenu : MonoBehaviour
         GameManager.Instance.disconectSelf();
         MenuManager.Instance.ResetHostButton();
         SceneManager.LoadScene("MenuScene"); // Cambia "MainMenu" por el nombre de tu escena principal
+    }
+    private void HandleHostResume()
+    {
+        isPaused = false;
     }
 }
