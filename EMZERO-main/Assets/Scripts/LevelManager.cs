@@ -5,6 +5,7 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public enum GameMode
 {
@@ -557,7 +558,16 @@ public class LevelManager : NetworkBehaviour
     {
         if (gameOverPanel != null)
         {
-
+            Button returnButton = gameOverPanel.GetComponentInChildren<Button>();
+            if(IsHost)
+            {
+                returnButton.interactable = true;
+                returnButton.GetComponentInChildren<TMP_Text>().text = "Volver al menú";
+            }else
+            {
+                returnButton.interactable = false;
+                returnButton.GetComponentInChildren<TMP_Text>().text = "Esperando al host";
+            }
             gameOverPanel.SetActive(true); // Muestra el panel de pausa
             Team team = teams[NetworkManager.LocalClientId];
             switch (reason)
@@ -627,7 +637,7 @@ public class LevelManager : NetworkBehaviour
         //Cursor.visible = false; // Oculta el cursor
 
         // Cargar la escena del menú principal
-        SceneManager.LoadScene("MenuScene"); // Cambia "MenuScene" por el nombre de tu escena principal
+        NetworkManager.Singleton.SceneManager.LoadScene("MenuScene", LoadSceneMode.Single); // Cambia "MenuScene" por el nombre de tu escena principal
     }
 
     public void OnPlayerDisconnect(ulong clientId)
