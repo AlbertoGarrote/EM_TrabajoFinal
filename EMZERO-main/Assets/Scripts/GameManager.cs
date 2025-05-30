@@ -53,6 +53,7 @@ public class GameManager : NetworkBehaviour
 
     string joinCode;
     GameObject pausePanel;
+    public bool hostPaused;
 
     public Action onHostDisconnect;
     void Awake()
@@ -306,7 +307,12 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void PauseGameClientRpc()
     {
-        
+        hostPaused = true;
+        pausePanel.GetComponentsInChildren<TMP_Text>()[0].text = "EL HOST HA PAUSADO EL JUEGO";
+        if (!IsHost)
+        {
+            pausePanel.GetComponentsInChildren<Button>()[0].interactable = false;
+        }
         pausePanel.SetActive(true); // Muestra el panel de pausa
         Time.timeScale = 0f; // Detiene el tiempo en el juego
 
@@ -318,11 +324,7 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void ResumeGameClientRpc()
     {
-        pausePanel.GetComponentsInChildren<TMP_Text>()[0].text = "EL HOST HA PAUSADO EL JUEGO";
-        if(!IsHost)
-        {
-            pausePanel.GetComponentsInChildren<Button>()[0].interactable = false;
-        }
+        hostPaused = false;
         pausePanel.SetActive(false); // Oculta el panel de pausa
         Time.timeScale = 1f; // Reactiva el tiempo en el juego
 

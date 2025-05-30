@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class PauseMenu : MonoBehaviour
 {
     public GameObject pausePanel; // Asigna el panel desde el inspector
-
+    bool hostPaused;
     private bool isPaused = false;
 
     void Update()
@@ -54,6 +54,7 @@ public class PauseMenu : MonoBehaviour
     public void ResumeGame()
     {
         isPaused = false;
+        hostPaused = true;
         if (NetworkManager.Singleton.IsHost)
         {
             GameManager.Instance.ResumeGameClientRpc();
