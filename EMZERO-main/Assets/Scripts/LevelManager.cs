@@ -348,7 +348,7 @@ public class LevelManager : NetworkBehaviour
             Debug.Log($"Instanciando jugador en {spawnPosition}");
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
-            SceneManager.MoveGameObjectToScene(player, SceneManager.GetActiveScene());
+            
 
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientName;

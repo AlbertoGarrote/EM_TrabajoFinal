@@ -226,14 +226,12 @@ public class LevelBuilder : NetworkBehaviour
     {
         Vector3 position = new Vector3(x, 0, z);
         GameObject go = Instantiate(prefab, position, rotation, roomParent);
-        SceneManager.MoveGameObjectToScene(go, SceneManager.GetActiveScene());
     }
 
     private void PlaceNetworkElement(GameObject prefab, float x, float z, Quaternion rotation)
     {
         Vector3 position = new Vector3(x, 0, z);
         GameObject objectNW = Instantiate(prefab, position, rotation, roomParent);
-        SceneManager.MoveGameObjectToScene(objectNW, SceneManager.GetActiveScene());
         objectNW.GetComponent<NetworkObject>().Spawn();
     }
 
