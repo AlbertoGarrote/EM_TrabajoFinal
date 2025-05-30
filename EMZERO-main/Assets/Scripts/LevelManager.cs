@@ -627,7 +627,7 @@ public class LevelManager : NetworkBehaviour
                     returnButton.interactable = true;
                     returnButton.GetComponentInChildren<TMP_Text>().text = "Volver al menú";
                     returnButton.GetComponent<Button>().onClick.RemoveAllListeners();
-                    returnButton.GetComponent<Button>().onClick.AddListener(()=>SceneManager.LoadScene("MenuScene"));
+                    returnButton.GetComponent<Button>().onClick.AddListener(ClientReturnToMenu);
                     break;
             }
             Time.timeScale = 0f;
@@ -635,6 +635,13 @@ public class LevelManager : NetworkBehaviour
             Cursor.lockState = CursorLockMode.None; // Desbloquea el cursor
             Cursor.visible = true; // Hace visible el cursor
         }
+    }
+
+    void ClientReturnToMenu()
+    {
+        MenuManager.Instance.ResetHostButton();
+        SceneManager.LoadScene("MenuScene");
+
     }
 
     [ClientRpc]
