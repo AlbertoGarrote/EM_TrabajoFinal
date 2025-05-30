@@ -637,6 +637,14 @@ public class LevelManager : NetworkBehaviour
         //Cursor.visible = false; // Oculta el cursor
 
         // Cargar la escena del menú principal
+        foreach (var obj in NetworkManager.Singleton.SpawnManager.SpawnedObjectsList)
+        {
+            if (obj != null && obj.IsSpawned && obj != NetworkManager.Singleton.gameObject)
+            {
+                obj.Despawn();
+            }
+        }
+
         NetworkManager.Singleton.SceneManager.LoadScene("MenuScene", LoadSceneMode.Single); // Cambia "MenuScene" por el nombre de tu escena principal
     }
 
