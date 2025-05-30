@@ -23,7 +23,7 @@ public enum Team
 public class LevelManager : NetworkBehaviour
 {
     #region Properties
-    public const int GAMEOVER_DESCONEXION = 0, GAMEOVER_ZOMBIES = 1, GAMEOVER_TIEMPO = 2, GAMEOVER_MONEDAS = 3;
+    public const int GAMEOVER_DESCONEXION = 0, GAMEOVER_ZOMBIES = 1, GAMEOVER_TIEMPO = 2, GAMEOVER_MONEDAS = 3, GAMEOVER_DESCONEXION_HOST =5;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject playerPrefab;
@@ -88,7 +88,7 @@ public class LevelManager : NetworkBehaviour
         levelBuilder = GetComponent<LevelBuilder>();
         NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
 
-
+        GameManager.Instance.onHostDisconnect += ()=> GlobalGameOver(GAMEOVER_DESCONEXION_HOST);
 
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }
@@ -617,6 +617,10 @@ public class LevelManager : NetworkBehaviour
                         gameOverText.text = "Derrota...";
                     }
                     reasonText.text = "¡Los humanos han conseguido todas las monedas!";
+                    break;
+                case 5:
+                    gameOverText.text = "Fin de la partida";
+                    reasonText.text = "El host se ha desconectado.";
                     break;
             }
             Time.timeScale = 0f;

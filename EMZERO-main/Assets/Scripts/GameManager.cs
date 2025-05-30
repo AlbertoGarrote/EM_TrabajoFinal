@@ -13,6 +13,7 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine.UI;
 using Unity.Collections;
+using System;
 
 public class GameManager : NetworkBehaviour
 {
@@ -52,6 +53,8 @@ public class GameManager : NetworkBehaviour
 
     string joinCode;
     GameObject pausePanel;
+
+    public Action onHostDisconnect;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -186,7 +189,7 @@ public class GameManager : NetworkBehaviour
         }
         if (_networkManager.IsServer)
         {
-            
+            onHostDisconnect();
             _networkManager.Shutdown();
             Debug.Log("Se ha desconectado el servidor");
         }
