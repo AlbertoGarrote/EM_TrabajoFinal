@@ -88,7 +88,7 @@ public class LevelManager : NetworkBehaviour
         levelBuilder = GetComponent<LevelBuilder>();
         NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
 
-        GameManager.Instance.onHostDisconnect += ()=> GlobalGameOver(GAMEOVER_DESCONEXION_HOST);
+        GameManager.Instance.onHostDisconnect += ()=> ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
 
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }

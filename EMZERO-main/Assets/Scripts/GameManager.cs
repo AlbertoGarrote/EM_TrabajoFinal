@@ -232,7 +232,7 @@ public class GameManager : NetworkBehaviour
         }
         if(!IsHost && clientId == _networkManager.LocalClientId)
         {
-            SceneManager.LoadScene("MenuScene");
+            onHostDisconnect();
         }
 
     }
