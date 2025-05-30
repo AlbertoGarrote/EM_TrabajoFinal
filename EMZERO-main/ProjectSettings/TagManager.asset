@@ -9,6 +9,7 @@ TagManager:
   - HostCamera
   - onlineInfo
   - codeText
+  - pausePanel
   layers:
   - Default
   - TransparentFX

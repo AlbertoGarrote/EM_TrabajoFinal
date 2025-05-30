@@ -26,13 +26,13 @@ public class PauseMenu : MonoBehaviour
     public void PauseGame()
     {
         isPaused = true;
-        GameManager.Instance.PauseGameClientRpc(pausePanel);
+        GameManager.Instance.PauseGameClientRpc();
     }
 
     public void ResumeGame()
     {
         isPaused = false;
-        GameManager.Instance.ResumeGameClientRpc(pausePanel);
+        GameManager.Instance.ResumeGameClientRpc();
     }
 
     public void QuitGame()

@@ -51,6 +51,7 @@ public class GameManager : NetworkBehaviour
     bool isStarted = false;
 
     string joinCode;
+    GameObject pausePanel;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -77,10 +78,14 @@ public class GameManager : NetworkBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        
+
         //inputCodeObj = GameObject.FindWithTag("codeText"); // cuadro de texto codigo
         //inputCode = inputCodeObj.GetComponentInChildren<TMP_InputField>();
-
+        if (scene.name == "GameScene")
+        {
+            pausePanel = GameObject.FindWithTag("pausePanel");
+            pausePanel.SetActive(false);
+        }
 
         if (!isStarted)
         {
@@ -290,7 +295,7 @@ public class GameManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void PauseGameClientRpc(GameObject pausePanel)
+    public void PauseGameClientRpc()
     {
         
         pausePanel.SetActive(true); // Muestra el panel de pausa
@@ -302,7 +307,7 @@ public class GameManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void ResumeGameClientRpc(GameObject pausePanel)
+    public void ResumeGameClientRpc()
     {
         pausePanel.SetActive(false); // Oculta el panel de pausa
         Time.timeScale = 1f; // Reactiva el tiempo en el juego
