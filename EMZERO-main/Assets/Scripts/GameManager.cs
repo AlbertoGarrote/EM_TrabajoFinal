@@ -309,6 +309,11 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void ResumeGameClientRpc()
     {
+        pausePanel.GetComponentInChildren<TMP_Text>().text = "EL HOST HA PAUSADO EL JUEGO";
+        if(!IsHost)
+        {
+            pausePanel.GetComponentsInChildren<Button>()[0].interactable = false;
+        }
         pausePanel.SetActive(false); // Oculta el panel de pausa
         Time.timeScale = 1f; // Reactiva el tiempo en el juego
 

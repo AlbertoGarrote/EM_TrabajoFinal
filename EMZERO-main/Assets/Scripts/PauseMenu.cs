@@ -1,6 +1,9 @@
+using System.Runtime.CompilerServices;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PauseMenu : MonoBehaviour
 {
@@ -30,9 +33,12 @@ public class PauseMenu : MonoBehaviour
         if (NetworkManager.Singleton.IsHost)
         {
             GameManager.Instance.PauseGameClientRpc();
-        }else
+        }
+        else
         {
-            
+            pausePanel.GetComponentInChildren<TMP_Text>().text = "PAUSA";
+            pausePanel.GetComponentsInChildren<Button>()[0].interactable = false;
+
             pausePanel.SetActive(true); // Muestra el panel de pausa
             Time.timeScale = 0f; // Detiene el tiempo en el juego
 
@@ -40,7 +46,7 @@ public class PauseMenu : MonoBehaviour
             Cursor.lockState = CursorLockMode.None; // Desbloquea el cursor
             Cursor.visible = true; // Hace visible el cursor
         }
-   
+
 
     }
 
