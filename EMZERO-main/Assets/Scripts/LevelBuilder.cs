@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Clase para generar el nivel del juego, incluyendo suelos, paredes, ítems decorativos, monedas y el borde exterior.
@@ -223,13 +225,15 @@ public class LevelBuilder : NetworkBehaviour
     private void PlaceElement(GameObject prefab, float x, float z, Quaternion rotation)
     {
         Vector3 position = new Vector3(x, 0, z);
-        Instantiate(prefab, position, rotation, roomParent);
+        GameObject go = Instantiate(prefab, position, rotation, roomParent);
+        SceneManager.MoveGameObjectToScene(go, SceneManager.GetActiveScene());
     }
 
     private void PlaceNetworkElement(GameObject prefab, float x, float z, Quaternion rotation)
     {
         Vector3 position = new Vector3(x, 0, z);
         GameObject objectNW = Instantiate(prefab, position, rotation, roomParent);
+        SceneManager.MoveGameObjectToScene(objectNW, SceneManager.GetActiveScene());
         objectNW.GetComponent<NetworkObject>().Spawn();
     }
 
