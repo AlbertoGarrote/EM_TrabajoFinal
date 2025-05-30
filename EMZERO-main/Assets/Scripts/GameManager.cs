@@ -230,6 +230,10 @@ public class GameManager : NetworkBehaviour
 
             RemovePlayerClientRpc(name);
         }
+        if(!IsHost && clientId == 0)
+        {
+            SceneManager.LoadScene("MenuScene");
+        }
 
     }
 
