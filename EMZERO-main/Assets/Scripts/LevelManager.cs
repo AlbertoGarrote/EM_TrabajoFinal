@@ -621,6 +621,8 @@ public class LevelManager : NetworkBehaviour
                 case 5:
                     gameOverText.text = "Fin de la partida";
                     reasonText.text = "El host se ha desconectado.";
+                    returnButton.interactable = true;
+                    returnButton.GetComponentInChildren<TMP_Text>().text = "Volver al menú";
                     break;
             }
             Time.timeScale = 0f;
