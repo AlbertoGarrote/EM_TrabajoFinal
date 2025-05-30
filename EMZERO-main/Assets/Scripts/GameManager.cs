@@ -71,6 +71,7 @@ public class GameManager : NetworkBehaviour
 
         _networkManager.OnClientConnectedCallback += OnPlayerConnect;
         _networkManager.OnClientDisconnectCallback += OnPlayerDisconnect;
+        Application.quitting += disconectSelf;
 
         uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
         menu.startHost = startServer;
