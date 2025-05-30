@@ -191,7 +191,7 @@ public class GameManager : NetworkBehaviour
         if (_networkManager.IsServer)
         {
             onHostDisconnect();
-            _networkManager.Shutdown();
+            //_networkManager.Shutdown();
             Debug.Log("Se ha desconectado el servidor");
         }
 
