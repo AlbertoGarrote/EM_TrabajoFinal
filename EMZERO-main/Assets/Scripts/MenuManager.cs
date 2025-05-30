@@ -23,6 +23,8 @@ public class MenuManager : MonoBehaviour
 
     public delegate bool UpdateCondition();
 
+    bool isMenuScene = true;
+
     public void Start()
     {
         lobbyParent.SetActive(false);
@@ -39,12 +41,13 @@ public class MenuManager : MonoBehaviour
 
         if (scene.name == "MenuScene")
         {
-
+            isMenuScene = true;
             canvas.SetActive(true);
             Reset();
         }
         else
         {
+            isMenuScene = false;
             canvas.SetActive(false);
         }
 
@@ -131,9 +134,12 @@ public class MenuManager : MonoBehaviour
 
     public void RemovePlayerFromLobby(string name)
     {
-        GameObject player = players.Find(p => p.GetComponent<TMP_Text>().text == name);
-        players.Remove(player);
-        Destroy(player);
+        if (isMenuScene)
+        {
+            GameObject player = players.Find(p => p.GetComponent<TMP_Text>().text == name);
+            players.Remove(player);
+            Destroy(player);
+        }
     }
 
     public void ChangeLobbyName(string name)
@@ -185,7 +191,7 @@ public class MenuManager : MonoBehaviour
     {
         playerName.gameObject.SetActive(true);
         playerName.text = $"Tu nombre: {name}";
-        if(host)
+        if (host)
         {
             playerName.text += " [host]";
         }
