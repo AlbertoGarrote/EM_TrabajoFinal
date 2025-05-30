@@ -29,13 +29,15 @@ public class PauseMenu : MonoBehaviour
 
     public void PauseGame()
     {
-        isPaused = true;
+     
         if (NetworkManager.Singleton.IsHost)
         {
             GameManager.Instance.PauseGameClientRpc();
+            isPaused = true;
         }
         else if(!GameManager.Instance.hostPaused)
         {
+            isPaused = true;
             pausePanel.GetComponentsInChildren<TMP_Text>(true)[0].text = "PAUSA";
 
             pausePanel.GetComponentsInChildren<Button>(true)[0].interactable = false;
@@ -53,16 +55,18 @@ public class PauseMenu : MonoBehaviour
 
     public void ResumeGame()
     {
-        isPaused = false;
-        hostPaused = false;
+     
         if (NetworkManager.Singleton.IsHost)
         {
             GameManager.Instance.ResumeGameClientRpc();
+            isPaused = false;
+
         }
         else
         {
             pausePanel.SetActive(false); // Oculta el panel de pausa
             Time.timeScale = 1f; // Reactiva el tiempo en el juego
+            isPaused = false;
 
             // Gestión del cursor
             Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor
