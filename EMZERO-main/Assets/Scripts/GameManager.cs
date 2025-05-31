@@ -269,8 +269,6 @@ public class GameManager : NetworkBehaviour
             {
                 CreateClientID(clientId);
                 nameInputField.interactable = false;
-                //menu.addPlayerToLobby(clientName);
-                //AddPlayerClientRpc(clientName, clientId);
             }
 
 
