@@ -272,6 +272,10 @@ public class GameManager : NetworkBehaviour
                 onHostDisconnect(); //cuando el jugador se desconecta del host
 
             clientIds.Clear();
+            if (SceneManager.GetActiveScene().name == "MenuScene")
+            {
+                menu.Disconnect();
+            }
 
         }
         RemovePlayerClientRpc(clientNames[clientId]);
