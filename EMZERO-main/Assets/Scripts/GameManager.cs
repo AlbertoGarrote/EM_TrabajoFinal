@@ -371,6 +371,7 @@ public class GameManager : NetworkBehaviour
             {
                 clientName = nameInputField.text;
             }
+            nameInputField.text = clientName;
             RegisterNameServerRpc(clientName, NetworkManager.Singleton.LocalClientId);
             thisClientStarted = true;
             thisClientHasName = true;

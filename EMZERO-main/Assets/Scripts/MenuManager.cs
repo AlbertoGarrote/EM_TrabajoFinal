@@ -281,5 +281,6 @@ public class MenuManager : MonoBehaviour
         relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
         relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "UNIRSE";
+        relay.GetComponentInChildren<TMP_InputField>().gameObject.SetActive(true);
     }
 }
