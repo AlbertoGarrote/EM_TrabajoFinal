@@ -48,11 +48,6 @@ public class MenuManager : MonoBehaviour
                 ResetHostButton();
                 Reset();
             }
-
-
-        
-
-
       
             foreach (var p in players)
             {
@@ -76,7 +71,6 @@ public class MenuManager : MonoBehaviour
 
     }
 
-    //public Action startGame;
     public void Awake()
     {
         if (Instance != null && Instance != this)
@@ -98,13 +92,6 @@ public class MenuManager : MonoBehaviour
     public void StartGame()
     {
         NetworkManager.Singleton.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
-
-        //ResetHostButton(startHost);
-        //startGame.Invoke();
-        // Cambia "MainScene" por el nombre de tu escena principal
-        //Inicia la partida para todos los clientes
-        //Compart el mapa a todos los clientes
-
     }
 
     public void QuitGame()
