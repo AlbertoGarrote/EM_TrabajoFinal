@@ -455,18 +455,19 @@ public class GameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void PlayerReadyServerRpc(bool isReady)
     {
-
-        if (isReady)
+        if (IsHost)
         {
-            playersReady++;
+            if (isReady)
+            {
+                playersReady++;
+            }
+            else
+            {
+                playersReady--;
+            }
+            menu.ShowReadyPlayers();
+            Debug.Log($"Jugadores listos {playersReady}");
         }
-        else
-        {
-            playersReady--;
-        }
-        menu.ShowReadyPlayers();
-        Debug.Log($"Jugadores listos {playersReady}");
-
     }
 
 }

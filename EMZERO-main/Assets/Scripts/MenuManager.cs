@@ -37,7 +37,7 @@ public class MenuManager : MonoBehaviour
             if (NetworkManager.Singleton.IsClient)
             {
                 lobbyParent.SetActive(true);
-                PlayerReadyToggle();
+                //PlayerReadyToggle();
                 GameManager.Instance.playersReady = 0;
             }
             else
