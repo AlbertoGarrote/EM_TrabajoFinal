@@ -123,7 +123,18 @@ public class GameManager : NetworkBehaviour
         {
             pausePanel = GameObject.FindWithTag("pausePanel");
             pausePanel.SetActive(false);
-        }
+
+            //si ya hay red, se toma el nombre del inputfield
+            if (IsClient)
+            {
+                if (nameInputField.text == "")
+                {
+                    clientName = uniqueIdGenerator.GenerateUniqueID();
+                    nameInputField.text = clientName;
+                }
+            }
+
+            }
         else
         {
             nameInput = GameObject.FindWithTag("nameText");

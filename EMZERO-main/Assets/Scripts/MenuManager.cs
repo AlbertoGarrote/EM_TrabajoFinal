@@ -321,4 +321,5 @@ public class MenuManager : MonoBehaviour
         optionsParent.SetActive(false);
         ResetJoinButton();
     }
+}
 

@@ -70,26 +70,25 @@ public class LevelBuilder : NetworkBehaviour
         roomParent = parentObject.transform;
 
     }
-    public void Start()
-    {
 
+    #endregion
+
+    #region World building methods
+
+
+    public void Build()
+    {
+        if (IsHost)
+            SendBuildInfoClientRpc(GameManager.Instance.coinDensity, GameManager.Instance.roomNumber); //El host manda crear las habitaciones en cliente bajo unos parametros
+        CreateRooms(roomWidth, roomLength, numberOfRooms);
     }
+
+    //Propaga los ajustes de partida referentes a la generación de mapa a todos los clientes
     [ClientRpc]
     void SendBuildInfoClientRpc(int coinDensity, int roomNumber)
     {
         this.coinsDensity = coinDensity;
         this.numberOfRooms = roomNumber;
-    }
-    #endregion
-
-    #region World building methods
-
-    public void Build()
-    {
-        if (IsHost)
-            SendBuildInfoClientRpc(GameManager.Instance.coinDensity, GameManager.Instance.roomNumber);
-        //numberOfRooms = GameManager.Instance.clientIds.Count * 2;
-        CreateRooms(roomWidth, roomLength, numberOfRooms);
     }
 
     /// <summary>
@@ -168,8 +167,8 @@ public class LevelBuilder : NetworkBehaviour
                     int itemSeed = Random.Range(0, obstaclesPrefabs.Length);
                     //Debug.Log(seed);
                     CreateDecorativeItem(x, z, width, length, tilePosition, seed, itemSeed);
-                    CreateDecorativeItemRPC(x, z, width, length, tilePosition, seed, itemSeed);
-                    CreateCoin(x, z, width, length, tilePosition);
+                    CreateDecorativeItemRPC(x, z, width, length, tilePosition, seed, itemSeed); //Se crea el mismo elemento decorativo en servidor y clientes
+                    CreateCoin(x, z, width, length, tilePosition); 
                 }
             }
         }
@@ -240,6 +239,7 @@ public class LevelBuilder : NetworkBehaviour
         GameObject go = Instantiate(prefab, position, rotation, roomParent);
     }
 
+    //Genera un network object y lo propaga en red
     private void PlaceNetworkElement(GameObject prefab, float x, float z, Quaternion rotation)
     {
         Vector3 position = new Vector3(x, 0, z);

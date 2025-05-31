@@ -108,8 +108,8 @@ public class PlayerController : NetworkBehaviour
             controller.player = transform;
         }
 
+        //Obtiene su id del diccionario de nombres del GameManager y lo muestra encima de su cabeza
         uniqueID = GameManager.Instance.clientNames[id.Value];
-
         if (floatingText != null)
         {
             floatingText.text.text = uniqueID;
@@ -122,7 +122,7 @@ public class PlayerController : NetworkBehaviour
 
     void Update()
     {
-        if (!IsHost && IsOwner)
+        if (!IsHost && IsOwner) //Los clientes mandan su imput al host
         {
             // Leer entrada del teclado
             horizontalInput = Input.GetAxis("Horizontal");
@@ -130,13 +130,10 @@ public class PlayerController : NetworkBehaviour
 
             if (cameraTransform != null)
             {
-                // Calcular la dirección de movimiento en relación a la cámara
-                //moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
-                //moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
                 UpdateMoveDirectionRpc(cameraTransform.forward, cameraTransform.right, horizontalInput, verticalInput);
             }
         }
-        else if (IsHost && IsOwner)
+        else if (IsHost && IsOwner) //El host se mueve directamente, sin pasar por rpc
         {
             horizontalInput = Input.GetAxis("Horizontal");
             verticalInput = Input.GetAxis("Vertical");
@@ -145,14 +142,13 @@ public class PlayerController : NetworkBehaviour
             {
                 //Calcular la dirección de movimiento en relación a la cámara
                 moveDirection = (cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput).normalized;
-                moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)
-                //UpdateMoveDirectionRpc(cameraTransform.forward, cameraTransform.right, horizontalInput, verticalInput);
+                moveDirection.y = 0f; // Asegurarnos de que el movimiento es horizontal (sin componente Y)   
             }
         }
 
 
 
-        // Mover el jugador
+        // Mover el jugador en el servidor. Network Transform se encarga de propagar ese movimiento a los clientes
         if (IsServer)
         {
             MovePlayer();
@@ -162,6 +158,15 @@ public class PlayerController : NetworkBehaviour
 
     }
 
+    //Manda al servidor el imput para calcular movimiento y animaciones
+    [Rpc(SendTo.Server)]
+    public void UpdateMoveDirectionRpc(Vector3 cameraForward, Vector3 cameraRight, float horizontal, float vertical)
+    {
+        horizontalInput = horizontal;
+        verticalInput = vertical;
+        moveDirection = (cameraForward * verticalInput + cameraRight * horizontalInput).normalized;
+        moveDirection.y = 0;
+    }
 
 
     void MovePlayer()
@@ -181,7 +186,6 @@ public class PlayerController : NetworkBehaviour
         }
 
     }
-
 
     void HandleAnimations()
     {
@@ -216,14 +220,6 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    [Rpc(SendTo.Server)]
-    public void UpdateMoveDirectionRpc(Vector3 cameraForward, Vector3 cameraRight, float horizontal, float vertical)
-    {
-        horizontalInput = horizontal;
-        verticalInput = vertical;
-        moveDirection = (cameraForward * verticalInput + cameraRight * horizontalInput).normalized;
-        moveDirection.y = 0;
-    }
 
     public void SubscribeToOnCoinPicked(Action action)
     {

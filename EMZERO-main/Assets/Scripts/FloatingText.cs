@@ -5,6 +5,7 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 
+//MANTIENE UN CANVAS MIRANDO A LA CÁMARA
 public class FloatingText : MonoBehaviour
 {
     Transform cam;
