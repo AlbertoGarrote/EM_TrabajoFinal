@@ -69,6 +69,7 @@ public class GameManager : NetworkBehaviour
     public TMP_InputField nameInputField;
 
     public int playersReady;
+    public Dictionary<ulong, bool> playersReadyDictionary = new Dictionary<ulong, bool>();
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -271,7 +272,7 @@ public class GameManager : NetworkBehaviour
                 nameInputField.interactable = false;
             }
 
-
+            playersReadyDictionary.Add(clientId, false);
 
         }
     }
@@ -286,8 +287,15 @@ public class GameManager : NetworkBehaviour
 
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
-            menu.ShowReadyPlayers();
 
+            if(playersReadyDictionary.ContainsKey(clientId))
+            {
+                if (playersReadyDictionary[clientId])
+                {
+                    playersReady--;
+                }
+                playersReadyDictionary.Remove(clientId);
+            }
         }
         if (!IsHost && clientId == _networkManager.LocalClientId)
         {
@@ -460,10 +468,12 @@ public class GameManager : NetworkBehaviour
             if (isReady)
             {
                 playersReady++;
+                playersReadyDictionary[NetworkManager.LocalClientId] = true;
             }
             else
             {
                 playersReady--;
+                playersReadyDictionary[NetworkManager.LocalClientId] = false; 
             }
             menu.ShowReadyPlayers();
             Debug.Log($"Jugadores listos {playersReady}");

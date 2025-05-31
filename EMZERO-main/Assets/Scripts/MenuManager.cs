@@ -27,6 +27,8 @@ public class MenuManager : MonoBehaviour
     bool isHosted = false;
     bool isWaiting = false;
     bool isReady = false;
+
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
 
