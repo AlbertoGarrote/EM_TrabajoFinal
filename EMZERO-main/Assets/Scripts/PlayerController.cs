@@ -90,13 +90,14 @@ public class PlayerController : NetworkBehaviour
             }
         }
 
-        UpdateCoinUI();
+
 
         if (isZombie)
             coinParent.gameObject.SetActive(false);
         else 
             coinParent.gameObject.SetActive(true);
 
+        UpdateCoinUI();
         base.OnNetworkSpawn();
 
     }
