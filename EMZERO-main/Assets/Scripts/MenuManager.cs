@@ -273,7 +273,9 @@ public class MenuManager : MonoBehaviour
     public void ResetJoinButton()
     {
         GameManager.Instance.playersReady = 0;
+        
         playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
+        playerName.GetComponentInChildren<TMP_InputField>().gameObject.SetActive(true);
         relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
         relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "UNIRSE";

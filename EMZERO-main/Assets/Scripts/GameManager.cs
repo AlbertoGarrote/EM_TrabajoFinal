@@ -286,7 +286,7 @@ public class GameManager : NetworkBehaviour
 
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
-
+            menu.ShowReadyPlayers();
 
         }
         if (!IsHost && clientId == _networkManager.LocalClientId)
