@@ -370,7 +370,7 @@ public class GameManager : NetworkBehaviour
 
     }
 
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     private void RegisterNameServerRpc(string name, ulong id)
     {
         clientNames.Add(id, name);
