@@ -37,7 +37,7 @@ public class MenuManager : MonoBehaviour
             if (NetworkManager.Singleton.IsClient)
             {
                 lobbyParent.SetActive(true);
-
+                PlayerReadyToggle();
             }
             else
             {
@@ -91,6 +91,8 @@ public class MenuManager : MonoBehaviour
         Time.timeScale = 1f; // Asegúrate de que el tiempo está restaurado al cargar la escena
         players = new List<GameObject>();
         SceneManager.sceneLoaded += OnSceneLoaded;
+
+
     }
 
     public void StartGame()
@@ -237,6 +239,11 @@ public class MenuManager : MonoBehaviour
         }
     }
 
+    public void ShowReadyPlayers()
+    {
+        optionsParent.GetComponentsInChildren<TMP_Text>()[0].text = $"JUGADORES LISTOS: {GameManager.Instance.playersReady}";
+    }
+
 
     public void ResetHostButton()
     {
@@ -249,6 +256,10 @@ public class MenuManager : MonoBehaviour
         relay.SetActive(true);
         hostButton.GetComponent<Button>().onClick.RemoveAllListeners();
         hostButton.GetComponent<Button>().onClick.AddListener(startHost);
+
+        relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
+        relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
+
     }
 
     public void Reset()
@@ -269,5 +280,7 @@ public class MenuManager : MonoBehaviour
         lobbyName.gameObject.SetActive(false);
         optionsParent.SetActive(false);
         playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
+        relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
+        relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
     }
 }

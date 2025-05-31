@@ -455,7 +455,7 @@ public class GameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void PlayerReadyServerRpc(bool isReady)
     {
-
+        menu.ShowReadyPlayers();
         if (isReady)
         {
             playersReady++;
