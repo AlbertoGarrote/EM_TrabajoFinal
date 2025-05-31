@@ -65,7 +65,7 @@ public class PlayerController : NetworkBehaviour
 
         }
 
-        //var floatingText = GetComponentInChildren<FloatingText>();
+        //
 
 
         UpdateCoinUI();
@@ -104,6 +104,8 @@ public class PlayerController : NetworkBehaviour
             controller.player = transform;
         }
 
+        uniqueID = GameManager.Instance.clientNames[id];
+
         if (floatingText != null)
         {
             floatingText.text.text = uniqueID;
@@ -112,12 +114,7 @@ public class PlayerController : NetworkBehaviour
 
 
     }
-
-    [ClientRpc]
-    public void SetUniqueIdClientRpc(string id)
-    {
-        uniqueID = id;
-    }
+    
 
     void Update()
     {
