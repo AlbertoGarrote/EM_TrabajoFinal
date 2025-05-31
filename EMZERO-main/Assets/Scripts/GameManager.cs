@@ -14,6 +14,8 @@ using Unity.Services.Core;
 using UnityEngine.UI;
 using Unity.Collections;
 using System;
+using System.Linq;
+using Newtonsoft.Json.Linq;
 
 public class GameManager : NetworkBehaviour
 {
@@ -38,7 +40,7 @@ public class GameManager : NetworkBehaviour
     [SerializeField] TMP_InputField inputCode;
     [SerializeField] MenuManager menu;
     public List<ulong> clientIds;
-    public Dictionary<ulong, string> clientNames;   
+    public Dictionary<ulong, string> clientNames;
     public string clientName;
     private UniqueIdGenerator uniqueIdGenerator;
     public int minPlayerNumber = 4;
@@ -57,6 +59,11 @@ public class GameManager : NetworkBehaviour
     public static event Action OnHostResume;
 
     public Action onHostDisconnect;
+
+    public int roomNumber;
+    public bool modeCoins;
+    public int coinDensity;
+    [SerializeField] GameObject coins, rooms;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -79,7 +86,8 @@ public class GameManager : NetworkBehaviour
         menu.startHost = startServer;
         SceneManager.sceneLoaded += OnSceneLoaded;
 
-        
+        OptionsHandleCoins();
+        OptionsHandleRooms();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -93,12 +101,15 @@ public class GameManager : NetworkBehaviour
             pausePanel.SetActive(false);
         }
 
+
         if (!isStarted)
         {
             isStarted = true;
         }
 
-     
+        //Si la red no está iniciada, la lista se vacía (para evitar que haya clientes en el lobby si hubo una dexconexion
+        if (!NetworkManager.IsClient)
+            clientIds.Clear();
 
     }
 
@@ -141,7 +152,7 @@ public class GameManager : NetworkBehaviour
 
 
             clientName = uniqueIdGenerator.GenerateUniqueID();
-            if(!clientNames.ContainsKey(0)) clientNames.Add(0, clientName);
+            if (!clientNames.ContainsKey(0)) clientNames.Add(0, clientName);
             menu.ChangeLobbyName(clientName, joinCode);
             menu.StartHostButton();
             menu.ChangePlayerName(clientName, true);
@@ -187,12 +198,15 @@ public class GameManager : NetworkBehaviour
     {
         if (_networkManager.IsClient)
         {
+
             _networkManager.Shutdown();
+
             thisClientStarted = false;
         }
         if (_networkManager.IsServer)
         {
             onHostDisconnect();
+
             //_networkManager.Shutdown();
             Debug.Log("Se ha desconectado el servidor");
         }
@@ -203,7 +217,19 @@ public class GameManager : NetworkBehaviour
     {
         if (_networkManager.IsServer)
         {
-            AddClientToList(clientId);
+            var clientRpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new[] { clientId }
+                }
+            };
+
+            foreach (var id in clientIds)
+            {
+                AddClientToListClientRpc(id, clientRpcParams);
+            }
+            AddClientToListClientRpc(clientId);
 
             Debug.Log($"Se ha conectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
@@ -212,10 +238,10 @@ public class GameManager : NetworkBehaviour
             if (!clientNames.ContainsKey(clientId) && clientId != 0)
             {
                 string clientName = CreateClientID(clientId);
-                clientNames.Add(clientId, clientName);
-                menu.addPlayerToLobby(clientName);
-                AddPlayerClientRpc(clientName);
+                //menu.addPlayerToLobby(clientName);
+                AddPlayerClientRpc(clientName, clientId);
             }
+
 
 
         }
@@ -223,35 +249,43 @@ public class GameManager : NetworkBehaviour
 
     public void OnPlayerDisconnect(ulong clientId)
     {
-        if (_networkManager.IsServer)
+        if (_networkManager.IsHost)
         {
 
-            RemoveClientFromList(clientId);
+            RemoveClientFromListClientRpc(clientId);
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
-            RemovePlayerClientRpc(name);
+
         }
-        if(!IsHost && clientId == _networkManager.LocalClientId)
+        if (!IsHost && clientId == _networkManager.LocalClientId)
         {
-            onHostDisconnect();
+            onHostDisconnect(); //cuando el jugador se desconecta del host
+
         }
+        RemovePlayerClientRpc(clientNames[clientId]);
 
     }
 
 
-    void AddClientToList(ulong clientid)
+    [ClientRpc]
+    void AddClientToListClientRpc(ulong clientid, ClientRpcParams clientRpcParams = default)
     {
-        if (NetworkManager.IsServer)
-            clientIds.Add(clientid);
+        clientIds.Add(clientid);
     }
 
-
-    void RemoveClientFromList(ulong clientid)
+    [ClientRpc]
+    void ClearClientListsClientRpc()
     {
-        if (NetworkManager.IsServer)
-            clientIds.Remove(clientid);
+        clientIds.Clear();
     }
+
+    [ClientRpc]
+    void RemoveClientFromListClientRpc(ulong clientid)
+    {
+        clientIds.Remove(clientid);
+    }
+
 
     public string CreateClientID(ulong targetClientId)
     {
@@ -265,25 +299,26 @@ public class GameManager : NetworkBehaviour
 
         string clientName = uniqueIdGenerator.GenerateUniqueID();
         List<FixedString128Bytes> clientNamesParameter = new List<FixedString128Bytes>();
-        foreach(GameObject player in menu.players)
+        foreach (GameObject player in menu.players)
         {
             clientNamesParameter.Add(player.GetComponentInChildren<TMP_Text>().text);
         }
-        ConnectPlayerClientRpc(clientName, clientNamesParameter.ToArray() , clientNames[0], clientRpcParams);
+        ConnectPlayerClientRpc(clientName, clientNamesParameter.ToArray(), clientIds.ToArray(), clientNames[0], clientRpcParams);
         return clientName;
     }
 
     [ClientRpc]
-    private void ConnectPlayerClientRpc(string message, FixedString128Bytes[] currentPlayers, string lobbyName, ClientRpcParams clientRpcParams = default)
+    private void ConnectPlayerClientRpc(string message, FixedString128Bytes[] currentPlayers, ulong[] ids, string lobbyName, ClientRpcParams clientRpcParams = default)
     {
         if (!IsHost)
         {
             clientName = message;
             thisClientStarted = true;
             thisClientHasName = true;
-            foreach(FixedString128Bytes player in currentPlayers)
+            for (int i = 0; i < currentPlayers.Length; i++)
             {
-                menu.addPlayerToLobby(player.ToString());
+                menu.addPlayerToLobby(currentPlayers[i].ToString());
+                clientNames.Add(ids[i], currentPlayers[i].ToString());
             }
             menu.StartClientButton();
             menu.ChangePlayerName(clientName, false);
@@ -292,17 +327,19 @@ public class GameManager : NetworkBehaviour
 
     }
 
+
     [ClientRpc]
     private void RemovePlayerClientRpc(string name)
     {
         menu.RemovePlayerFromLobby(name);
+        clientNames.Remove(clientNames.FirstOrDefault(pair => pair.Value == name).Key);
     }
 
     [ClientRpc]
-    private void AddPlayerClientRpc(string name)
+    private void AddPlayerClientRpc(string name, ulong id)
     {
-        if(!IsHost)
         menu.addPlayerToLobby(name);
+        clientNames.Add(id, name);
     }
 
     [ClientRpc]
@@ -328,7 +365,7 @@ public class GameManager : NetworkBehaviour
         hostPaused = false;
         OnHostResume?.Invoke();
         pausePanel.SetActive(false); // Oculta el panel de pausa
-        
+
         Time.timeScale = 1f; // Reactiva el tiempo en el juego
 
         // Gestión del cursor
@@ -336,5 +373,15 @@ public class GameManager : NetworkBehaviour
         Cursor.visible = false; // Oculta el cursor
     }
 
+    public void OptionsHandleCoins()
+    {
+        coinDensity = (int)coins.GetComponentInChildren<Slider>().value;
+        coins.GetComponentsInChildren<TMP_Text>()[1].text = coinDensity + "%";
+    }
 
+    public void OptionsHandleRooms()
+    {
+        roomNumber = (int)rooms.GetComponentInChildren<Slider>().value;
+        rooms.GetComponentsInChildren<TMP_Text>()[1].text = "" +roomNumber;
+    }
 }

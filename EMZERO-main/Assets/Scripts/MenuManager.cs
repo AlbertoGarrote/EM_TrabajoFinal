@@ -24,10 +24,18 @@ public class MenuManager : MonoBehaviour
     public delegate bool UpdateCondition();
 
     bool isMenuScene = true;
+    bool isHosted = false;
+    bool isWaiting = false;
 
     public void Start()
     {
-        lobbyParent.SetActive(false);
+        if (NetworkManager.Singleton.IsClient)
+            lobbyParent.SetActive(true);
+        else
+            lobbyParent.SetActive(false);
+
+        
+
         lobbyName.gameObject.SetActive(false);
         playerName.gameObject.SetActive(false);
         hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
@@ -44,6 +52,19 @@ public class MenuManager : MonoBehaviour
             isMenuScene = true;
             canvas.SetActive(true);
             Reset();
+            foreach (var p in players)
+            {
+                Destroy(p);
+            }
+            players.Clear();
+            foreach (ulong id in GameManager.Instance.clientIds)
+            {
+                GameObject player = Instantiate(playerInfoPrefab, layerGroup.transform);
+                player.GetComponentInChildren<TMP_Text>().text = GameManager.Instance.clientNames[id];
+                players.Add(player);
+            }
+            if (NetworkManager.Singleton.IsHost)
+                hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
         }
         else
         {
@@ -105,11 +126,21 @@ public class MenuManager : MonoBehaviour
 
     public void Update()
     {
-        /*UpdateButton(startButton, 
-            () => GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber && NetworkManager.Singleton.IsServer
-            );
-        */
+        UpdateButton(hostButton.GetComponent<Button>(), UpdateHostButton);
+    }
 
+    public bool UpdateHostButton()
+    {
+        bool button = false;
+        if (NetworkManager.Singleton.IsHost)
+        {
+            button = GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber;
+        }
+        else
+        {
+            button = !isWaiting;
+        }
+        return button;
     }
 
     public void showLobby()
@@ -127,8 +158,12 @@ public class MenuManager : MonoBehaviour
 
     public void addPlayerToLobby(string name)
     {
+        if (NetworkManager.Singleton.IsServer)
+            hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
+
         GameObject player = Instantiate(playerInfoPrefab, layerGroup.transform);
         player.GetComponentInChildren<TMP_Text>().text = name;
+
         players.Add(player);
     }
 
@@ -136,9 +171,15 @@ public class MenuManager : MonoBehaviour
     {
         if (isMenuScene)
         {
-            GameObject player = players.Find(p => p.GetComponent<TMP_Text>().text == name);
-            players.Remove(player);
-            Destroy(player);
+            GameObject player = players.Find(p => p.GetComponentInChildren<TMP_Text>().text == name);
+            if (player != null)
+            {
+                players.Remove(player);
+                Destroy(player);
+            }
+            if (NetworkManager.Singleton.IsServer)
+                hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
+            Debug.Log($"no se encontró al jugador: {name}");
         }
     }
 
@@ -155,25 +196,29 @@ public class MenuManager : MonoBehaviour
     public void StartHostButton()
     {
         lobbyName.gameObject.SetActive(true);
-        hostButton.GetComponentInChildren<TMP_Text>().text = "JUGAR";
+        hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
         hostButton.GetComponent<Button>().onClick.RemoveAllListeners();
         hostButton.GetComponent<Button>().onClick.AddListener(StartGame);
         relay.SetActive(false);
+        isHosted = true;
     }
 
     public void StartClientButton()
     {
+        isWaiting = true;
         lobbyName.gameObject.SetActive(true);
         hostButton.GetComponentInChildren<TMP_Text>().text = "Esperando al host";
-        hostButton.GetComponent<Button>().interactable = false;
+        //hostButton.GetComponent<Button>().interactable = false;
         relay.SetActive(false);
     }
 
 
     public void ResetHostButton()
     {
-        hostButton.GetComponent<Button>().interactable = true;
+        //hostButton.GetComponent<Button>().interactable = true;
+        isWaiting = false;
         hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
+        //hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
         hostButton.SetActive(true);
         relay.SetActive(true);
         hostButton.GetComponent<Button>().onClick.RemoveAllListeners();
@@ -182,7 +227,7 @@ public class MenuManager : MonoBehaviour
 
     public void Reset()
     {
-        lobbyParent.gameObject.SetActive(false);
+        //lobbyParent.gameObject.SetActive(false);
         startButton.interactable = true;
         startButton.enabled = true;
     }

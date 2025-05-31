@@ -23,7 +23,7 @@ public enum Team
 public class LevelManager : NetworkBehaviour
 {
     #region Properties
-    public const int GAMEOVER_DESCONEXION = 0, GAMEOVER_ZOMBIES = 1, GAMEOVER_TIEMPO = 2, GAMEOVER_MONEDAS = 3, GAMEOVER_DESCONEXION_HOST =5;
+    public const int GAMEOVER_DESCONEXION = 0, GAMEOVER_ZOMBIES = 1, GAMEOVER_TIEMPO = 2, GAMEOVER_MONEDAS = 3, GAMEOVER_DESCONEXION_HOST = 5;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject playerPrefab;
@@ -88,7 +88,7 @@ public class LevelManager : NetworkBehaviour
         levelBuilder = GetComponent<LevelBuilder>();
         NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
 
-        GameManager.Instance.onHostDisconnect += ()=> ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
+        GameManager.Instance.onHostDisconnect += () => ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
 
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }
@@ -150,7 +150,7 @@ public class LevelManager : NetworkBehaviour
         {
             UpdateGlobalTeamUI();
         }
-       
+
     }
     private void Update()
     {
@@ -230,7 +230,7 @@ public class LevelManager : NetworkBehaviour
             ulong id = human.GetComponent<PlayerController>().id;
 
             //teams[id] = Team.ConvertedZombie;
-            
+
             // Destruir el humano actual
             Destroy(human);
 
@@ -252,7 +252,7 @@ public class LevelManager : NetworkBehaviour
                 playerController.uniqueID = uniqueID; // Mantener el identificador único
                 numberOfHumans--; // Reducir el número de humanos
                 numberOfZombies++; // Aumentar el número de zombis
-                if(numberOfHumans == 0)
+                if (numberOfHumans == 0)
                 {
                     GlobalGameOver(GAMEOVER_ZOMBIES);
                 }
@@ -349,7 +349,7 @@ public class LevelManager : NetworkBehaviour
             Debug.Log($"Instanciando jugador en {spawnPosition}");
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
-            
+
 
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientName;
@@ -568,7 +568,8 @@ public class LevelManager : NetworkBehaviour
             {
                 returnButton.interactable = true;
                 returnButton.GetComponentInChildren<TMP_Text>().text = "Volver al menú";
-            }else
+            }
+            else
             {
                 returnButton.interactable = false;
                 returnButton.GetComponentInChildren<TMP_Text>().text = "Esperando al host";
@@ -696,7 +697,6 @@ public class LevelManager : NetworkBehaviour
                 {
                     UpdateGlobalTeamUI();
                 }
-                teams.Remove(clientId);
                 RemoveDictionaryClientRpc(clientId);
             }
 
@@ -705,8 +705,8 @@ public class LevelManager : NetworkBehaviour
     [ClientRpc]
     void UpdateDictionaryClientRpc(ulong id, Team team)
     {
-        
-            teams[id] = team;
+
+        teams[id] = team;
     }
 
     [ClientRpc]
@@ -718,17 +718,16 @@ public class LevelManager : NetworkBehaviour
     [ClientRpc]
     void RemoveDictionaryClientRpc(ulong id)
     {
-        if (!IsHost)
-            teams.Remove(id);
+        teams.Remove(id);
     }
 
-    
+
     [ClientRpc]
     void AddTotalCoinClientRpc()
     {
         TotalCoinsCollected++;
     }
-    
+
     #endregion
 
 }

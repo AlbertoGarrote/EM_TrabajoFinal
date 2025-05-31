@@ -68,14 +68,26 @@ public class LevelBuilder : NetworkBehaviour
     {
         GameObject parentObject = new GameObject("RoomsParent");
         roomParent = parentObject.transform;
-    }
 
+    }
+    public void Start()
+    {
+
+    }
+    [ClientRpc]
+    void SendBuildInfoClientRpc(int coinDensity, int roomNumber)
+    {
+        this.coinsDensity = coinDensity;
+        this.numberOfRooms = roomNumber;
+    }
     #endregion
 
     #region World building methods
 
     public void Build()
     {
+        if (IsHost)
+            SendBuildInfoClientRpc(GameManager.Instance.coinDensity, GameManager.Instance.roomNumber);
         //numberOfRooms = GameManager.Instance.clientIds.Count * 2;
         CreateRooms(roomWidth, roomLength, numberOfRooms);
     }
@@ -151,14 +163,14 @@ public class LevelBuilder : NetworkBehaviour
 
                 if (NetworkManager.Singleton.IsServer)
                 {
-                    
+
                     float seed = Random.Range(0, 100);
                     int itemSeed = Random.Range(0, obstaclesPrefabs.Length);
                     //Debug.Log(seed);
                     CreateDecorativeItem(x, z, width, length, tilePosition, seed, itemSeed);
                     CreateDecorativeItemRPC(x, z, width, length, tilePosition, seed, itemSeed);
                     CreateCoin(x, z, width, length, tilePosition);
-                } 
+                }
             }
         }
 
@@ -276,10 +288,10 @@ public class LevelBuilder : NetworkBehaviour
 
         bool totalCondition = widthBorderCondition && lengthBorderCondition && blockingDoorConditionX && blockingDoorConditionZ;
 
-       
+
         if (totalCondition && ShouldPlaceItem(seed))
         {
-            
+
             GameObject obstaclePrefab = obstaclesPrefabs[itemSeed];
             obstaclePrefab.tag = "Obstacle";
             PlaceElement(obstaclePrefab, tilePosition.x, tilePosition.z, Quaternion.identity);
@@ -292,9 +304,9 @@ public class LevelBuilder : NetworkBehaviour
         Debug.Log("GENERANDO ITEM EN CLIENTE");
         CreateDecorativeItem(x, z, width, length, tilePosition, seed, itemSeed);
     }
-        /// <summary>
-        /// Coloca monedas en las baldosas del suelo.
-        /// </summary>
+    /// <summary>
+    /// Coloca monedas en las baldosas del suelo.
+    /// </summary>
     private void CreateCoin(int x, int z, int width, int length, Vector3 tilePosition)
     {
         bool widthBorderCondition = x > 0 && x < (width - 1);
