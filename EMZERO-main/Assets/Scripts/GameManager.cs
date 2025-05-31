@@ -314,6 +314,7 @@ public class GameManager : NetworkBehaviour
             {
                 menu.Disconnect();
             }
+            menu.isReady = false;
 
         }
 
