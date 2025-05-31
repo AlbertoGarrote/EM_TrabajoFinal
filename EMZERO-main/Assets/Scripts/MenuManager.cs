@@ -38,6 +38,7 @@ public class MenuManager : MonoBehaviour
             {
                 lobbyParent.SetActive(true);
                 PlayerReadyToggle();
+                GameManager.Instance.playersReady = 0;
             }
             else
             {
