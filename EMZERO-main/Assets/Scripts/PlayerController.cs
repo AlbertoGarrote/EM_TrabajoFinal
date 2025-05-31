@@ -14,7 +14,7 @@ public class PlayerController : NetworkBehaviour
 
     [Header("Character settings")]
     public bool isZombie = false; // Añadir una propiedad para el estado del jugador
-    public string uniqueID; // Añadir una propiedad para el identificador único
+    public string uniqueID = ""; // Añadir una propiedad para el identificador único
 
     [Header("Movement Settings")]
     public float moveSpeed = 5f;           // Velocidad de movimiento
@@ -30,6 +30,7 @@ public class PlayerController : NetworkBehaviour
 
     public ulong id;
     Action onCoinPicked;
+    [SerializeField] FloatingText floatingText;
 
     void Start()
     {
@@ -55,11 +56,20 @@ public class PlayerController : NetworkBehaviour
         }
 
 
+        if (IsOwner)
+        {
+            if (isZombie)
+                coinParent.gameObject.SetActive(false);
+            else
+                coinParent.gameObject.SetActive(true);
 
-        if (isZombie)
-            coinParent.gameObject.SetActive(false);
-        else
-            coinParent.gameObject.SetActive(true);
+        }
+
+        //var floatingText = GetComponentInChildren<FloatingText>();
+        if (floatingText != null)
+        {
+            floatingText.text.text = uniqueID;
+        }
 
         UpdateCoinUI();
     }
@@ -97,8 +107,7 @@ public class PlayerController : NetworkBehaviour
             controller.player = transform;
         }
 
-  
-        base.OnNetworkSpawn();
+
 
     }
 
