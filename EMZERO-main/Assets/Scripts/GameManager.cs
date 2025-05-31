@@ -458,11 +458,11 @@ public class GameManager : NetworkBehaviour
 
         if (isReady)
         {
-            playersReady--;
+            playersReady++;
         }
         else
         {
-            playersReady++;
+            playersReady--;
         }
         menu.ShowReadyPlayers();
         Debug.Log($"Jugadores listos {playersReady}");
