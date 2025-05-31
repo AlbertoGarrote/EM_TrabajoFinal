@@ -28,7 +28,7 @@ public class PlayerController : NetworkBehaviour
     public GameObject cameraPrefab;
     Vector3 moveDirection;
 
-    public ulong id;
+    public NetworkVariable<ulong> id = new NetworkVariable<ulong>();
     Action onCoinPicked;
     [SerializeField] FloatingText floatingText;
 
@@ -104,7 +104,7 @@ public class PlayerController : NetworkBehaviour
             controller.player = transform;
         }
 
-        uniqueID = GameManager.Instance.clientNames[id];
+        uniqueID = GameManager.Instance.clientNames[id.Value];
 
         if (floatingText != null)
         {

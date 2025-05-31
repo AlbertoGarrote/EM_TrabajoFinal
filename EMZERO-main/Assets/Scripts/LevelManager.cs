@@ -254,7 +254,7 @@ public class LevelManager : NetworkBehaviour
             Quaternion playerRotation = human.transform.rotation;
             string uniqueID = human.GetComponent<PlayerController>().uniqueID;
             Transform cam = human.GetComponent<PlayerController>().cameraTransform;
-            ulong id = human.GetComponent<PlayerController>().id;
+            ulong id = human.GetComponent<PlayerController>().id.Value;
 
             //teams[id] = Team.ConvertedZombie;
 
@@ -381,7 +381,7 @@ public class LevelManager : NetworkBehaviour
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientNames[id];
             //player.GetComponent<PlayerController>().SetUniqueIdClientRpc(GameManager.Instance.clientNames[id]);
-            player.GetComponent<PlayerController>().id = id;
+            player.GetComponent<PlayerController>().id.Value = id;
             player.GetComponent<PlayerController>().SubscribeToOnCoinPicked(AddTotalCoinClientRpc);
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
 
