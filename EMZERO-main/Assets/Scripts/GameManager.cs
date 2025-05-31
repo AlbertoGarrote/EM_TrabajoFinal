@@ -452,7 +452,7 @@ public class GameManager : NetworkBehaviour
         modeCoins = modeIsCoins;
     }
 
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     public void PlayerReadyServerRpc(bool isReady)
     {
 
