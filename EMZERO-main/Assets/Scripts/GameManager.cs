@@ -184,11 +184,7 @@ public class GameManager : NetworkBehaviour
 
     public void startClient()
     {
-        if (!thisClientStarted)
-        {
             JoinRelay(inputCode.text);
-
-        }
     }
 
     public async void JoinRelay(string joinCode)

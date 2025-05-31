@@ -144,7 +144,7 @@ public class MenuManager : MonoBehaviour
     {
         startButton.enabled = false;
         lobbyParent.SetActive(true);
-
+        ResetJoinButton();
     }
 
     public void exitLobby()
@@ -278,6 +278,7 @@ public class MenuManager : MonoBehaviour
         
         playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
         playerName.GetComponentInChildren<TMP_InputField>().gameObject.SetActive(true);
+
         relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
         relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "UNIRSE";
