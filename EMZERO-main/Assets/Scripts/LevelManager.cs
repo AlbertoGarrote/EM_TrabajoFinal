@@ -380,6 +380,7 @@ public class LevelManager : NetworkBehaviour
 
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientNames[id];
+            player.GetComponent<PlayerController>().SetUniqueIdClientRpc(GameManager.Instance.clientNames[id]);
             player.GetComponent<PlayerController>().id = id;
             player.GetComponent<PlayerController>().SubscribeToOnCoinPicked(AddTotalCoinClientRpc);
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);

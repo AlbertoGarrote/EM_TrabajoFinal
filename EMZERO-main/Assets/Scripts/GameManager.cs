@@ -40,7 +40,7 @@ public class GameManager : NetworkBehaviour
     [SerializeField] TMP_InputField inputCode;
     [SerializeField] MenuManager menu;
     public List<ulong> clientIds;
-    public Dictionary<ulong, string> clientNames;
+    [SerializeField] public Dictionary<ulong, string> clientNames;
     public string clientName;
     private UniqueIdGenerator uniqueIdGenerator;
     public int minPlayerNumber = 4;
@@ -366,6 +366,7 @@ public class GameManager : NetworkBehaviour
             {
                 menu.addPlayerToLobby(currentPlayers[i].ToString());
                 clientNames.Add(ids[i], currentPlayers[i].ToString());
+                Debug.Log(ids[i]+ currentPlayers[i].ToString());
             }
             menu.StartClientButton();
             menu.ChangeLobbyName(lobbyName);
@@ -395,6 +396,7 @@ public class GameManager : NetworkBehaviour
         {
             menu.addPlayerToLobby(name);
             clientNames.Add(id, name);
+            Debug.Log(id + name);
         }
     }
 
