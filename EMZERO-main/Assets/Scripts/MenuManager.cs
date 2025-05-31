@@ -176,7 +176,7 @@ public class MenuManager : MonoBehaviour
             }
             if (NetworkManager.Singleton.IsServer)
                 hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
-            Debug.Log($"no se encontró al jugador: {name}");
+            
         }
     }
 
@@ -219,14 +219,14 @@ public class MenuManager : MonoBehaviour
         if(!isReady)
         {
             //Mandar "Listo" a servidor
-            GameManager.Instance.PlayerReadyServerRpc(true);
+            GameManager.Instance.PlayerReadyServerRpc(true, NetworkManager.Singleton.LocalClientId);
             isReady = true;
             relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "LISTO";
         }
         else
         {
             //Mandar "No Listo" al servidor
-            GameManager.Instance.PlayerReadyServerRpc(false);
+            GameManager.Instance.PlayerReadyServerRpc(false, NetworkManager.Singleton.LocalClientId);
             isReady = false;
             relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "NO LISTO";
         }

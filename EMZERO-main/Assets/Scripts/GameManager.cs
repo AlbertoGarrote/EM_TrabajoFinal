@@ -467,19 +467,19 @@ public class GameManager : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void PlayerReadyServerRpc(bool isReady)
+    public void PlayerReadyServerRpc(bool isReady, ulong id)
     {
         if (IsHost)
         {
             if (isReady)
             {
                 playersReady++;
-                playersReadyDictionary[NetworkManager.LocalClientId] = true;
+                playersReadyDictionary[id] = true;
             }
             else
             {
                 playersReady--;
-                playersReadyDictionary[NetworkManager.LocalClientId] = false; 
+                playersReadyDictionary[id] = false; 
             }
             menu.ShowReadyPlayers();
             Debug.Log($"Jugadores listos {playersReady}");
