@@ -13,16 +13,29 @@ using static UnityEngine.EventSystems.StandaloneInputModule;
 
 public class MenuManager : MonoBehaviour
 {
+    //GESTIONA EL MENU PRINCIPAL Y EL LOBBY
+    //NO ES NETWORK OBJECT: EL GAMEMANAGER SE ENCARGA DE QUE TODOS LOS MENUMANAGER DE LOS CLIENTES RECIBAN LA MISMA INFORMACIÓN
+    //Y SE ACTUALIZEN DE LA MISMA MANERA PARA MANTENERSE SINCRONIZADOS
+
+    //Singleton
     public static MenuManager Instance;
+
+    //Referencias a la escena
     [SerializeField] Button startButton;
     [SerializeField] GameObject lobbyParent, layerGroup, playerInfoPrefab, hostButton, relay, optionsParent;
     [SerializeField] TMP_Text lobbyName, playerName;
+
+    //Lista de jugadores visibles en el lobby
     public List<GameObject> players;
+
+
     public UnityAction startHost;
+
     GameObject canvas;
 
     public delegate bool UpdateCondition();
 
+    //Estados del manager
     bool isMenuScene = true;
     bool isHosted = false;
     bool isWaiting = false;
@@ -31,19 +44,23 @@ public class MenuManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        //Aunque el menuManager solo hace cosas en la escena del menu, se conserva (dontDestroyOnLoad) para mantener
+        //la información entre partidas
 
+        //Cuando entra a la escena del menu
         if (scene.name == "MenuScene")
         {
             isMenuScene = true;
             canvas.SetActive(true);
+
+            //Si se vuelve al menú con una red aun activa (rejugar)
             if (NetworkManager.Singleton.IsClient)
             {
                 lobbyParent.SetActive(true);
-                //PlayerReadyToggle();
-                //GameManager.Instance.playersReady = 0;
                 ShowReadyPlayers();
+                GameManager.Instance.gameStarted.Value = false;
             }
-            else
+            else //Si se accede al menú sin una red activa, es decir, la primera vez o tras una desconexion
             {
                 lobbyParent.SetActive(false);
                 optionsParent.SetActive(false);
@@ -53,7 +70,10 @@ public class MenuManager : MonoBehaviour
                 ResetJoinButton();
                 Reset();
             }
-      
+
+            //Cada vez que se vuelve a la escena del menú, se borran todos los jugadores del lobby y se vuelven a añadir teniendo
+            //en cuenta los jugadores conectados actualmente en GameManager. De este modo también se contempla si un jugador
+            //se desconectó durante la partida
             foreach (var p in players)
             {
                 Destroy(p);
@@ -65,6 +85,8 @@ public class MenuManager : MonoBehaviour
                 player.GetComponentInChildren<TMP_Text>().text = GameManager.Instance.clientNames[id];
                 players.Add(player);
             }
+
+            //Si se vuelve a la escena principal despues de una partida manteniendo la conexion, se muestra el boton de jugar
             if (NetworkManager.Singleton.IsHost)
                 hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
         }
@@ -78,14 +100,15 @@ public class MenuManager : MonoBehaviour
 
     public void Awake()
     {
+        //Singleton
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
-
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
         canvas = GetComponent<Canvas>().gameObject;
         Time.timeScale = 1f; // Asegúrate de que el tiempo está restaurado al cargar la escena
         players = new List<GameObject>();
@@ -94,8 +117,10 @@ public class MenuManager : MonoBehaviour
 
     }
 
+    //Lo llama el boton de empezar partida solo si se dan las condiciones adecuadas. Cambia la escena a todos los clientes
     public void StartGame()
     {
+        GameManager.Instance.gameStarted.Value = true;
         NetworkManager.Singleton.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
     }
 
@@ -108,6 +133,7 @@ public class MenuManager : MonoBehaviour
 #endif
     }
 
+    //Mantiene un boton actualizado dada una condicion
     public void UpdateButton(Button b, UpdateCondition updateCondition)
     {
         if (updateCondition())
@@ -125,13 +151,14 @@ public class MenuManager : MonoBehaviour
         UpdateButton(hostButton.GetComponent<Button>(), UpdateHostButton);
     }
 
+    //Mantiene el boton de jugar pulsable solo si se es host, hay suficientes jugadores conectados, y todos están listos
     public bool UpdateHostButton()
     {
         bool button = false;
         if (NetworkManager.Singleton.IsHost)
         {
             button = GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber
-                && GameManager.Instance.playersReady == GameManager.Instance.clientIds.Count-1;
+                && GameManager.Instance.playersReady == GameManager.Instance.clientIds.Count - 1;
         }
         else
         {
@@ -140,6 +167,7 @@ public class MenuManager : MonoBehaviour
         return button;
     }
 
+    //Abrir el menu del lobby
     public void showLobby()
     {
         startButton.enabled = false;
@@ -147,12 +175,14 @@ public class MenuManager : MonoBehaviour
         ResetJoinButton();
     }
 
+    //Salir del menu del lobby
     public void exitLobby()
     {
         startButton.enabled = true;
         lobbyParent.SetActive(false);
     }
 
+    //Añadir un jugador al lobby
     public void addPlayerToLobby(string name)
     {
         if (NetworkManager.Singleton.IsServer)
@@ -164,6 +194,7 @@ public class MenuManager : MonoBehaviour
         players.Add(player);
     }
 
+    //Sacar un jugador del lobby
     public void RemovePlayerFromLobby(string name)
     {
         if (isMenuScene)
@@ -176,20 +207,23 @@ public class MenuManager : MonoBehaviour
             }
             if (NetworkManager.Singleton.IsServer)
                 hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
-            
+
         }
     }
 
+    //Cambiar el nombre del lobby
     public void ChangeLobbyName(string name)
     {
         lobbyName.text = "Lobby de " + name;
     }
 
+    //Cambiar el nombre del lobby, indicando además que este es el host
     public void ChangeLobbyName(string name, string code)
     {
         lobbyName.text = $"Lobby de {name} [{code}]";
     }
 
+    //Se llama al pulsar el boton de "HOST". Su funcionalidad cambia a la de empezar la partida
     public void StartHostButton()
     {
         optionsParent.SetActive(true);
@@ -202,21 +236,22 @@ public class MenuManager : MonoBehaviour
         isHosted = true;
     }
 
+    //Se llama al pulsar el boton de "UNIRSE". Su funcionalidad cambia a la de "listo"
     public void StartClientButton()
     {
         isWaiting = true;
         lobbyName.gameObject.SetActive(true);
         hostButton.GetComponentInChildren<TMP_Text>().text = "Esperando al host";
-        //hostButton.GetComponent<Button>().interactable = false;
         relay.GetComponentInChildren<TMP_InputField>().gameObject.SetActive(false);
         relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "NO LISTO";
         relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         relay.GetComponentInChildren<Button>().onClick.AddListener(PlayerReadyToggle);
     }
 
+    //Sirve para alternar entre "listo" y "no listo", notificando al host a través de gameManager 
     public void PlayerReadyToggle()
     {
-        if(!isReady)
+        if (!isReady)
         {
             //Mandar "Listo" a servidor
             GameManager.Instance.PlayerReadyServerRpc(true, NetworkManager.Singleton.LocalClientId);
@@ -232,19 +267,19 @@ public class MenuManager : MonoBehaviour
         }
     }
 
+    //Actualizar los jugadores listos de la interfaz del host
     public void ShowReadyPlayers()
     {
         optionsParent.GetComponentsInChildren<TMP_Text>()[0].text = $"JUGADORES LISTOS: {GameManager.Instance.playersReady}";
     }
 
+    //Devuelve el boton de host a su funcionalidad original (iniciar el host) y vuelve a mostrar las opciones de unirse a partida
 
     public void ResetHostButton()
     {
 
-        //hostButton.GetComponent<Button>().interactable = true;
         isWaiting = false;
         hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
-        //hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
         hostButton.SetActive(true);
         relay.SetActive(true);
         hostButton.GetComponent<Button>().onClick.RemoveAllListeners();
@@ -252,13 +287,28 @@ public class MenuManager : MonoBehaviour
 
     }
 
+    //Devuelve el boton de Join a su funcionalidad original de unirse a partidas
+    public void ResetJoinButton()
+    {
+        GameManager.Instance.playersReady = 0;
+
+        playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
+        playerName.GetComponentInChildren<TMP_InputField>().gameObject.SetActive(true);
+
+        relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
+        relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
+        relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "UNIRSE";
+        relay.GetComponentInChildren<TMP_InputField>(true).gameObject.SetActive(true);
+    }
+
+
     public void Reset()
     {
-        //lobbyParent.gameObject.SetActive(false);
         startButton.interactable = true;
         startButton.enabled = true;
     }
 
+    //"Limpia" todo el lobby cuando un cliente o host se desconectan de la red
     public void Disconnect()
     {
         foreach (var p in players)
@@ -272,16 +322,3 @@ public class MenuManager : MonoBehaviour
         ResetJoinButton();
     }
 
-    public void ResetJoinButton()
-    {
-        GameManager.Instance.playersReady = 0;
-        
-        playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
-        playerName.GetComponentInChildren<TMP_InputField>().gameObject.SetActive(true);
-
-        relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
-        relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
-        relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "UNIRSE";
-        relay.GetComponentInChildren<TMP_InputField>(true).gameObject.SetActive(true);
-    }
-}

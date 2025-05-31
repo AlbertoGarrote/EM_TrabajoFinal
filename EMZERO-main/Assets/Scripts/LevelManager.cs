@@ -24,6 +24,7 @@ public enum Team
 public class LevelManager : NetworkBehaviour
 {
     #region Properties
+    // Constatntes de GameOver
     public const int GAMEOVER_DESCONEXION = 0, GAMEOVER_ZOMBIES = 1, GAMEOVER_TIEMPO = 2, GAMEOVER_MONEDAS = 3, GAMEOVER_DESCONEXION_HOST = 5;
 
     [Header("Prefabs")]
@@ -61,17 +62,19 @@ public class LevelManager : NetworkBehaviour
     public string PlayerPrefabName => playerPrefab.name;
     public string ZombiePrefabName => zombiePrefab.name;
 
-    //private UniqueIdGenerator uniqueIdGenerator;
+    //Referencias varias
     private LevelBuilder levelBuilder;
-
     private PlayerController playerController;
 
+    //Gestión de juego
     private float remainingSeconds;
     private bool isGameOver = false;
 
-    public GameObject gameOverPanel; // Asigna el panel desde el inspector
+    //UI
+    public GameObject gameOverPanel; 
     [SerializeField] private TMP_Text gameOverText, reasonText;
 
+    // Diccionario de equipos
     private Dictionary<ulong, Team> teams = new Dictionary<ulong, Team>();
 
     #endregion
@@ -88,12 +91,14 @@ public class LevelManager : NetworkBehaviour
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }
 
+    // Cuando se activa se suscribe al metodo de desconexion.
     private void OnEnable()
     {
         GameManager.Instance.onHostDisconnect += () => ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
         NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
     }
 
+    // Se desuscribe para evitar llamadas en la escena incorrecta
     private void OnDisable()
     {
         GameManager.Instance.onHostDisconnect -= () => ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
@@ -136,6 +141,7 @@ public class LevelManager : NetworkBehaviour
             }
         }
 
+        // El host envia a todos los clientes el modo de juego seleccionado,así como el tiempo total para el minijuego pertinente
         if (IsHost)
             SendGameModeClientRpc( GameManager.Instance.modeCoins, GameManager.Instance.totalTime);
 
@@ -150,9 +156,11 @@ public class LevelManager : NetworkBehaviour
             CoinsGenerated = levelBuilder.GetCoinsGenerated();
         }
 
+        // Generar equipos
         if (NetworkManager.Singleton.IsServer)
             SpawnTeams();
 
+        // Actualizar UI
         if (NetworkManager.Singleton.IsServer)
         {
             UpdateGlobalTeamUI();
@@ -168,6 +176,7 @@ public class LevelManager : NetworkBehaviour
         else
             gameMode = GameMode.Tiempo;
     }
+
     private void Update()
     {
         if (gameMode == GameMode.Tiempo)
@@ -181,41 +190,12 @@ public class LevelManager : NetworkBehaviour
             HandleCoinBasedGameMode();
         }
 
-        if (Input.GetKeyDown(KeyCode.Z)) // Presiona "Z" para convertirte en Zombie
-        {
-            // Comprobar si el jugador actual está usando el prefab de humano
-            GameObject currentPlayer = GameObject.FindGameObjectWithTag("Player");
-            if (currentPlayer != null && currentPlayer.name.Contains(playerPrefab.name))
-            {
-                ChangeToZombie();
-            }
-            else
-            {
-                Debug.Log("El jugador actual no es un humano.");
-            }
-        }
-        else if (Input.GetKeyDown(KeyCode.H)) // Presiona "H" para convertirte en Humano
-        {
-            // Comprobar si el jugador actual está usando el prefab de zombie
-            GameObject currentPlayer = GameObject.FindGameObjectWithTag("Player");
-            if (currentPlayer != null && currentPlayer.name.Contains(zombiePrefab.name))
-            {
-                ChangeToHuman();
-            }
-            else
-            {
-                Debug.Log("El jugador actual no es un zombie.");
-            }
-        }
         if (NetworkManager.Singleton.IsServer)
         {
+            //Mantener UI actualizada
             UpdateGlobalTeamUI();
         }
 
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            GlobalGameOver(GAMEOVER_MONEDAS);
-        }
     }
 
     #endregion
@@ -237,7 +217,6 @@ public class LevelManager : NetworkBehaviour
             Vector3 playerPosition = human.transform.position;
             Quaternion playerRotation = human.transform.rotation;
             string uniqueID = human.GetComponent<PlayerController>().uniqueID;
-            Transform cam = human.GetComponent<PlayerController>().cameraTransform;
             ulong id = human.GetComponent<PlayerController>().id.Value;
 
             // Destruir el humano actual
@@ -260,11 +239,12 @@ public class LevelManager : NetworkBehaviour
                 numberOfZombies++; // Aumentar el número de zombis
                 if (numberOfHumans == 0)
                 {
-                    GlobalGameOver(GAMEOVER_ZOMBIES);
+                    GlobalGameOver(GAMEOVER_ZOMBIES); 
                 }
                 else
                 {
-                    UpdateDictionaryClientRpc(id, Team.ConvertedZombie);
+                    // ConvertedZombie es un nuevo equipo a parte del de los zombies para gestionar las victorias parciales
+                    UpdateDictionaryClientRpc(id, Team.ConvertedZombie); // Actualizar en todos los clientes el nuevo equipo del jugador
                 }
 
                 if (NetworkManager.Singleton.IsServer)
@@ -284,66 +264,6 @@ public class LevelManager : NetworkBehaviour
         }
     }
 
-    private void ChangeToHuman()
-    {
-        Debug.Log("Cambiando a Humano");
-
-        // Obtener la referencia al jugador actual
-        GameObject currentPlayer = GameObject.FindGameObjectWithTag("Player");
-
-        if (currentPlayer != null)
-        {
-            // Guardar la posición y rotación del jugador actual
-            Vector3 playerPosition = currentPlayer.transform.position;
-            Quaternion playerRotation = currentPlayer.transform.rotation;
-
-            // Destruir el jugador actual
-            Destroy(currentPlayer);
-
-            // Instanciar el prefab del humano en la misma posición y rotación
-            GameObject human = Instantiate(playerPrefab, playerPosition, playerRotation);
-            human.tag = "Player";
-
-            // Obtener la referencia a la cámara principal
-            Camera mainCamera = Camera.main;
-
-            if (mainCamera != null)
-            {
-                // Obtener el script CameraController de la cámara principal
-                CameraController cameraController = mainCamera.GetComponent<CameraController>();
-
-                if (cameraController != null)
-                {
-                    // Asignar el humano al script CameraController
-                    cameraController.player = human.transform;
-                }
-
-                // Obtener el componente PlayerController del humano instanciado
-                playerController = human.GetComponent<PlayerController>();
-                // Asignar el transform de la cámara al PlayerController
-                if (playerController != null)
-                {
-                    playerController.enabled = true;
-                    playerController.cameraTransform = mainCamera.transform;
-                    playerController.isZombie = false; // Cambiar el estado a humano
-                    numberOfHumans++; // Aumentar el número de humanos
-                    numberOfZombies--; // Reducir el número de zombis
-                }
-                else
-                {
-                    Debug.LogError("PlayerController no encontrado en el humano instanciado.");
-                }
-            }
-            else
-            {
-                Debug.LogError("No se encontró la cámara principal.");
-            }
-        }
-        else
-        {
-            Debug.LogError("No se encontró el jugador actual.");
-        }
-    }
 
     private void SpawnPlayer(Vector3 spawnPosition, GameObject prefab, ulong id)
     {
@@ -355,11 +275,12 @@ public class LevelManager : NetworkBehaviour
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
 
+            // Asignar variablesen host
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientNames[id];
-            player.GetComponent<PlayerController>().id.Value = id;
+            player.GetComponent<PlayerController>().id.Value = id; // Identificador en red del jugador
             player.GetComponent<PlayerController>().SubscribeToOnCoinPicked(AddTotalCoinClientRpc);
-            player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
+            player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id); // Generar en todos los clientes
 
         }
         else
@@ -372,7 +293,8 @@ public class LevelManager : NetworkBehaviour
     private void SpawnTeams()
     {
         Debug.Log("Instanciando equipos");
-
+        // Generar listas auxiliares para después mezclar su contenido.Con ello se consigue spawns aleatorios y diferentes roles
+        // (humanos o zombie) para cada jugador en diferentes partidas
         List<ulong> clientIdsRng = new List<ulong>(GameManager.Instance.clientIds);
         ShuffleList(clientIdsRng);
 
@@ -386,6 +308,7 @@ public class LevelManager : NetworkBehaviour
         numberOfHumans = playerNumber / 2;
         numberOfZombies = playerNumber - numberOfHumans;
 
+        // Generar humanos y asignarlos a un jugador
         for (int i = 0; i < numberOfHumans; i++)
         {
             if (i < humanSpawnPoints.Count)
@@ -397,7 +320,7 @@ public class LevelManager : NetworkBehaviour
                 AddDictionaryClientRpc(id, Team.Human);
             }
         }
-
+        // Generar zombies y asignarlos a un jugador
         for (int i = 0; i < numberOfZombies; i++)
         {
             if (i < zombieSpawnPoints.Count)
@@ -410,7 +333,7 @@ public class LevelManager : NetworkBehaviour
             }
         }
     }
-
+    // METODO PARA MEZCLAR UNA LISTA
     public static void ShuffleList<T>(List<T> list)
     {
         System.Random rng = new System.Random();
@@ -422,6 +345,7 @@ public class LevelManager : NetworkBehaviour
             (list[k], list[count]) = (list[count], list[k]);
         }
     }
+    // Actualizar UI en host
     private void UpdateTeamUI(int humans, int zombies)
     {
         if (humansText != null)
@@ -435,6 +359,7 @@ public class LevelManager : NetworkBehaviour
         }
     }
 
+    //Actualizar UI en clientes
     [Rpc(SendTo.NotServer)]
     public void UpdateUIClientRpc(int humans, int zombies)
     {
@@ -442,6 +367,7 @@ public class LevelManager : NetworkBehaviour
         UpdateTeamUI(humans, zombies);
     }
 
+    // Actualizar en todos lados
     public void UpdateGlobalTeamUI()
     {
         UpdateTeamUI(numberOfHumans, numberOfZombies);
@@ -492,7 +418,7 @@ public class LevelManager : NetworkBehaviour
             }
         }
     }
-
+    // Llama a GameOver en todos los clientes
     public void GlobalGameOver(int reason)
     {
         if (isGameOver == true) return;
@@ -503,6 +429,14 @@ public class LevelManager : NetworkBehaviour
             ShowGameOverPanelClientRpc(reason);
         }
     }
+
+    [ClientRpc]
+    private void ShowGameOverPanelClientRpc(int reason)
+    {
+        ShowGameOverPanel(reason);
+    }
+
+    // Dependiendo del motivo del GameOver se mostrarápor pantalla un mensaje u otro
     private void ShowGameOverPanel(int reason)
     {
         if (gameOverPanel != null)
@@ -510,6 +444,7 @@ public class LevelManager : NetworkBehaviour
             Button returnButton = gameOverPanel.GetComponentInChildren<Button>();
             returnButton.GetComponent<Button>().onClick.RemoveAllListeners();
             returnButton.GetComponent<Button>().onClick.AddListener(ReturnToMainMenu);
+            // Solo el host es capaz de volver al menú principal. Cuando él vuelve, veuleven todos los clientes.
             if (IsHost)
             {
                 returnButton.interactable = true;
@@ -584,6 +519,7 @@ public class LevelManager : NetworkBehaviour
         }
     }
 
+    // Volver al Menú principal desde el cliente
     void ClientReturnToMenu()
     {
         MenuManager.Instance.ResetHostButton();
@@ -591,15 +527,10 @@ public class LevelManager : NetworkBehaviour
 
     }
 
-    [ClientRpc]
-    private void ShowGameOverPanelClientRpc(int reason)
-    {
-        ShowGameOverPanel(reason);
-    }
-
     public void ReturnToMainMenu()
     {
         // Cargar la escena del menú principal
+        // Eliminar networkObjects de la escena anterior
         List<NetworkObject> objects = NetworkManager.Singleton.SpawnManager.SpawnedObjectsList.ToList();
         foreach (var obj in objects)
         {
@@ -610,9 +541,10 @@ public class LevelManager : NetworkBehaviour
         }
         objects.Clear();
 
-        NetworkManager.Singleton.SceneManager.LoadScene("MenuScene", LoadSceneMode.Single); // Cambia "MenuScene" por el nombre de tu escena principal
+        NetworkManager.Singleton.SceneManager.LoadScene("MenuScene", LoadSceneMode.Single); // Cargar escena del menu
     }
 
+    // Gestión de desconexiones durante la partida y actualización del UI.
     public void OnPlayerDisconnect(ulong clientId)
     {
         if (NetworkManager.Singleton.IsServer)
@@ -620,6 +552,7 @@ public class LevelManager : NetworkBehaviour
             Console.WriteLine($"Jugador {clientId} desconectado");
             if (teams.ContainsKey(clientId))
             {
+                // Se comprueba de qué equipo es el jugador que se desconecta
                 Team team = teams[clientId];
                 Console.WriteLine($"Restando 1 {team}");
                 if (team == Team.Human)
@@ -630,19 +563,21 @@ public class LevelManager : NetworkBehaviour
                 {
                     numberOfZombies--;
                 }
-                if (numberOfHumans == 0 || numberOfZombies == 0)
+                if (numberOfHumans == 0 || numberOfZombies == 0) // Si un bando se queda sin jugadores, se lanza un GameOver
                 {
-                    GlobalGameOver(0);
+                    GlobalGameOver(GAMEOVER_DESCONEXION);
                 }
                 else
                 {
                     UpdateGlobalTeamUI();
                 }
-                RemoveDictionaryClientRpc(clientId);
+                RemoveDictionaryClientRpc(clientId); // Se elimina el jugador desconectado del diccionario de equipos
             }
 
         }
     }
+
+    //METODOS DE GESTION DEL DICCIONARIO DE EQUIPOS
     [ClientRpc]
     void UpdateDictionaryClientRpc(ulong id, Team team)
     {
@@ -662,7 +597,7 @@ public class LevelManager : NetworkBehaviour
         teams.Remove(id);
     }
 
-
+    // Metodo de actualización de monedas recogidas
     [ClientRpc]
     void AddTotalCoinClientRpc()
     {

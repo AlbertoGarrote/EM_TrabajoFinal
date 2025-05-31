@@ -49,7 +49,7 @@ public class PlayerController : NetworkBehaviour
                 Transform coinTextTransform = panel.Find("Coins");
                 if (coinTextTransform != null)
                 {
-                    coinText = coinTextTransform.GetComponentInChildren<TextMeshProUGUI>();
+                    coinText = coinTextTransform.GetComponentsInChildren<TextMeshProUGUI>()[1];
                     coinParent = coinTextTransform.gameObject;
                 }
             }
@@ -73,6 +73,10 @@ public class PlayerController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        //CADA JUGADOR ES RESPONSABLE DE CREAR O ENCONTRAR SU PROPIA CAMARA
+        //EN CADA CLIENTE SOLO HAY 1 UNICA CAMARA. SI EL PLAYERCONTROLLER SE INSTANCIA POR PRIMERA VEZ, CREA UNA CAMARA NUEVA
+        //SI NO, REUTILIZA LA ANTERIOR
+
         GameObject camera = null;
         if (IsHost)
         {
@@ -208,7 +212,7 @@ public class PlayerController : NetworkBehaviour
     {
         if (coinText != null)
         {
-            coinText.text = $"{CoinsCollected}";
+            coinText.text = $"<{CoinsCollected}>";
         }
     }
 

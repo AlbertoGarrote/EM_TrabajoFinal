@@ -5391,6 +5391,7 @@ MonoBehaviour:
   lobbyName: {fileID: 494830862}
   playerName: {fileID: 67516634}
   players: []
+  isReady: 0
 --- !u!1 &1759442202
 GameObject:
   m_ObjectHideFlags: 0

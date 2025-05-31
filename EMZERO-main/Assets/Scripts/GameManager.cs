@@ -33,45 +33,56 @@ public class GameManager : NetworkBehaviour
     de humano a zombi y condiciones de fin de juego.
     */
 
-    // Start is called before the first frame update
+    //Instancia de Singleton
     public static GameManager Instance { get; private set; }
+
+    //Variables de acceso a elementos de la escena
     [SerializeField] NetworkManager _networkManager;
     [SerializeField] GameObject humanPrefab, zombiePrefab, inputCodeObj;
     [SerializeField] TMP_InputField inputCode;
     [SerializeField] MenuManager menu;
+
+    //Lista de clientes (id)
     public List<ulong> clientIds;
+
+    //Diccionario de nombres (id-nombre)
     [SerializeField] public Dictionary<ulong, string> clientNames;
     public string clientName;
     private UniqueIdGenerator uniqueIdGenerator;
-    public int minPlayerNumber = 4;
 
+    //control
     bool serverStarted = false;
     bool thisClientStarted = false;
     bool thisClientHasName = false;
+    public NetworkVariable<bool> gameStarted = new NetworkVariable<bool>(false);
 
-    public bool gameStarted = false;
-
-    bool isStarted = false;
-
+    //relay
     string joinCode;
+
+    //Gestión de desconxiones y pausa
+    public static event Action OnHostResume;
+    public Action onHostDisconnect;
     GameObject pausePanel;
     public bool hostPaused;
-    public static event Action OnHostResume;
 
-    public Action onHostDisconnect;
-
+    //ajustes de partida
+    public int minPlayerNumber = 4;
     public int roomNumber;
     public bool modeCoins = true;
     public int coinDensity, totalTime;
     [SerializeField] GameObject coins, rooms, timeSlider;
 
+    //selección de nombre en el lobby
     public GameObject nameInput;
     public TMP_InputField nameInputField;
 
+    //lógica del boton de "listo"
     public int playersReady;
     public Dictionary<ulong, bool> playersReadyDictionary = new Dictionary<ulong, bool>();
+
     void Awake()
     {
+        //Singleton
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -81,28 +92,33 @@ public class GameManager : NetworkBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        //Inicializacion de variables
         clientIds = new List<ulong>();
         clientNames = new Dictionary<ulong, string>();
 
+        //Observers
         _networkManager.OnClientConnectedCallback += OnPlayerConnect;
         _networkManager.OnClientDisconnectCallback += OnPlayerDisconnect;
         Application.quitting += disconectSelf;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        menu.startHost = startServer;
 
         uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
-        menu.startHost = startServer;
-        SceneManager.sceneLoaded += OnSceneLoaded;
 
 
+        //interfaz ajustes de partida
+        modeCoins = true;
         OptionsHandleCoins();
         OptionsHandleRooms();
         OptionsHandleTime();
+
     }
 
+    //CADA VEZ QUE SE CAMBIA DE ESCENA
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
 
-        //inputCodeObj = GameObject.FindWithTag("codeText"); // cuadro de texto codigo
-        //inputCode = inputCodeObj.GetComponentInChildren<TMP_InputField>();
+        
         if (scene.name == "GameScene")
         {
             pausePanel = GameObject.FindWithTag("pausePanel");
@@ -114,34 +130,18 @@ public class GameManager : NetworkBehaviour
             nameInputField = nameInput.GetComponentInChildren<TMP_InputField>();
         }
 
-
-        if (!isStarted)
-        {
-            isStarted = true;
-        }
-
         //Si la red no está iniciada, la lista se vacía (para evitar que haya clientes en el lobby si hubo una dexconexion
         if (!NetworkManager.IsClient)
             clientIds.Clear();
 
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
 
     // RELAY
     public async void startServer()
     {
         if (!serverStarted)
         {
-            //clientName = uniqueIdGenerator.GenerateUniqueID();
-            //_networkManager.StartHost();
-            //serverStarted = true;
-            //Debug.Log($"Iniciado el servidor");
-            //onlineTypeInfo.text = $"{clientName} [Servidor]";
 
             try
             {
@@ -181,10 +181,12 @@ public class GameManager : NetworkBehaviour
         }
 
     }
-
     public void startClient()
     {
+        if (!gameStarted.Value)
             JoinRelay(inputCode.text);
+        else
+            Debug.LogWarning("No se puede entrar a una partida en curso");
     }
 
     public async void JoinRelay(string joinCode)
@@ -209,7 +211,7 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-
+    //SUSCRITO A APPLICATION.QUIT. SE LLAMA PARA DESCONECTARSE DE LA RED
     public void disconectSelf()
     {
 
@@ -222,6 +224,8 @@ public class GameManager : NetworkBehaviour
         }
         if (_networkManager.IsServer)
         {
+            //Si se cierra el host se elimina la información de la partida
+
             if (onHostDisconnect != null)
                 onHostDisconnect();
 
@@ -240,6 +244,7 @@ public class GameManager : NetworkBehaviour
 
     }
 
+    //Se llama en el servidor cada vez que se conecta un jugador
     public void OnPlayerConnect(ulong clientId)
     {
         if (_networkManager.IsServer)
@@ -252,47 +257,57 @@ public class GameManager : NetworkBehaviour
                 }
             };
 
+            //Se añaden al clientList del cliente que se acaba de conectar todos los ids que ya estaban conectados
             var clientIdsCopy = clientIds.ToList();
             foreach (var id in clientIdsCopy)
             {
                 AddClientToListClientRpc(id, clientRpcParams);
             }
+
+            //Se añade el nuevo id a todos los clientList
             AddClientToListClientRpc(clientId);
 
             Debug.Log($"Se ha conectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
 
+            //Se añade el nuevo jugador al diccionario de nombres, tanto del servidor como del propio cliente
+            //(el diccionario y la lista de ids se tienen que mantener siempre sincronizados para gestionar
+            //el lobby)
             if (!clientNames.ContainsKey(clientId) && clientId != 0)
             {
                 CreateClientID(clientId);
                 nameInputField.interactable = false;
             }
 
+            //Se añade el nuevo jugador como "No listo"
             playersReadyDictionary.Add(clientId, false);
 
         }
     }
 
+    //Se llama cada vez que un jugador se desconecta
     public void OnPlayerDisconnect(ulong clientId)
     {
         if (IsHost && clientId != 0)
         {
+            //Se borra el id de todas las listas
             RemoveClientFromListClientRpc(clientId);
-
+            //Se borra el nombre de todos los diccionarios
             if (clientNames.ContainsKey(clientId))
                 RemovePlayerClientRpc(clientNames[clientId]);
 
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
-            if(playersReadyDictionary.ContainsKey(clientId))
+            //Si el jugador que se desconectó estaba listo, se resta 1 al número de listos
+            if (playersReadyDictionary.ContainsKey(clientId))
             {
                 if (playersReadyDictionary[clientId])
                 {
                     playersReady--;
                 }
-                playersReadyDictionary.Remove(clientId);
+                playersReadyDictionary.Remove(clientId); //se borra del diccionario de listos
             }
             else
             {
@@ -300,13 +315,19 @@ public class GameManager : NetworkBehaviour
             }
             menu.ShowReadyPlayers();
         }
-        if (!IsHost && clientId == _networkManager.LocalClientId)
+        //Se llama en el cliente cuando este se desconecta del host. También cuando el host se desconecta 
+        //y tira a todos los clientes
+
+        if (!IsHost && clientId == _networkManager.LocalClientId) 
         {
             if (onHostDisconnect != null)
-                onHostDisconnect(); //cuando el jugador se desconecta del host
+                onHostDisconnect(); //Se llama en levelManager. Lanza un Game Over especifico si el host se desconecta
 
+            //Vaciar las estructuras de id al desconectarse de la red
             clientIds.Clear();
             clientNames.Clear();
+
+            //Mostrar la desconexión en el lobby
             if (SceneManager.GetActiveScene().name == "MenuScene")
             {
                 menu.Disconnect();
@@ -319,6 +340,7 @@ public class GameManager : NetworkBehaviour
     }
 
 
+    //MÉTODOS PARA ACTUALIZAR LA LISTA DE IDS
     [ClientRpc]
     void AddClientToListClientRpc(ulong clientid, ClientRpcParams clientRpcParams = default)
     {
@@ -338,6 +360,8 @@ public class GameManager : NetworkBehaviour
     }
 
 
+    //Gestiona la conexión de un nuevo cliente. Le pasa todos los nombres del diccionario conectados hasta
+    //el momento y le manda asignarse un nombre
     public void CreateClientID(ulong targetClientId)
     {
         var clientRpcParams = new ClientRpcParams
@@ -348,7 +372,7 @@ public class GameManager : NetworkBehaviour
             }
         };
 
-
+        //Se convierte la lista de String a una clase INetworkSerializable -> FixedString128Bytes[]
         List<FixedString128Bytes> clientNamesParameter = new List<FixedString128Bytes>();
         foreach (GameObject player in menu.players)
         {
@@ -356,6 +380,10 @@ public class GameManager : NetworkBehaviour
         }
         ConnectPlayerClientRpc(clientNamesParameter.ToArray(), clientIds.ToArray(), clientNames[0], clientRpcParams);
     }
+
+    //Como el nombre tiene que depender del campo text del inputField del cliente, hay que obtenerlo de un rpc.
+    //Si el cliente no tiene nombre, se le asigna uno automático. Cuando el cliente ha terminado de "decidir"
+    //su nombre, manda un ServerRpc con él
     [ClientRpc]
     private void ConnectPlayerClientRpc(FixedString128Bytes[] currentPlayers, ulong[] ids, string lobbyName, ClientRpcParams clientRpcParams = default)
     {
@@ -377,7 +405,7 @@ public class GameManager : NetworkBehaviour
             {
                 menu.addPlayerToLobby(currentPlayers[i].ToString());
                 clientNames.Add(ids[i], currentPlayers[i].ToString());
-                Debug.Log(ids[i]+ currentPlayers[i].ToString());
+                Debug.Log(ids[i] + currentPlayers[i].ToString());
             }
             menu.StartClientButton();
             menu.ChangeLobbyName(lobbyName);
@@ -385,6 +413,8 @@ public class GameManager : NetworkBehaviour
 
     }
 
+    //Avisa al servidor de que ya ha "decidido" el nombre, y manda ser registrado en el 
+    //diccionario de nombres
     [ServerRpc(RequireOwnership = false)]
     private void RegisterNameServerRpc(string name, ulong id)
     {
@@ -393,13 +423,7 @@ public class GameManager : NetworkBehaviour
         AddPlayerClientRpc(name, id);
     }
 
-    [ClientRpc]
-    private void RemovePlayerClientRpc(string name)
-    {
-        menu.RemovePlayerFromLobby(name);
-        clientNames.Remove(clientNames.FirstOrDefault(pair => pair.Value == name).Key);
-    }
-
+    //MÉTODOS PARA SINCRONIZAR EL DICCIONARIO DE NOMBRES (Y EL LOBBY)
     [ClientRpc]
     private void AddPlayerClientRpc(string name, ulong id)
     {
@@ -412,13 +436,23 @@ public class GameManager : NetworkBehaviour
     }
 
     [ClientRpc]
+    private void RemovePlayerClientRpc(string name)
+    {
+        menu.RemovePlayerFromLobby(name);
+        clientNames.Remove(clientNames.FirstOrDefault(pair => pair.Value == name).Key);
+    }
+
+
+    //MÉTODOS PARA GESTIONAR PAUSE Y RESUME
+
+    [ClientRpc]
     public void PauseGameClientRpc()
     {
         hostPaused = true;
         pausePanel.GetComponentsInChildren<TMP_Text>()[0].text = "EL HOST HA PAUSADO EL JUEGO";
         if (!IsHost)
         {
-            pausePanel.GetComponentsInChildren<Button>()[0].interactable = false;
+            pausePanel.GetComponentsInChildren<Button>()[0].interactable = false; //Si el host pausa el juego, se le pausa a todos los clientes, y ninguno puede darle a "resume"
         }
         pausePanel.SetActive(true); // Muestra el panel de pausa
         Time.timeScale = 0f; // Detiene el tiempo en el juego
@@ -432,7 +466,7 @@ public class GameManager : NetworkBehaviour
     public void ResumeGameClientRpc()
     {
         hostPaused = false;
-        OnHostResume?.Invoke();
+        OnHostResume?.Invoke(); //Cuando el host despausa el juego, todos los clientes lo hacen
         pausePanel.SetActive(false); // Oculta el panel de pausa
 
         Time.timeScale = 1f; // Reactiva el tiempo en el juego
@@ -442,6 +476,7 @@ public class GameManager : NetworkBehaviour
         Cursor.visible = false; // Oculta el cursor
     }
 
+    //MÉTODOS DE LOS AJUSTES DE PARTIDA EN EL LOBBY
     public void OptionsHandleCoins()
     {
         coinDensity = (int)coins.GetComponentInChildren<Slider>().value;
@@ -465,6 +500,7 @@ public class GameManager : NetworkBehaviour
         modeCoins = modeIsCoins;
     }
 
+    //Avisa al servidor de que un jugador está lista
     [ServerRpc(RequireOwnership = false)]
     public void PlayerReadyServerRpc(bool isReady, ulong id)
     {
@@ -478,7 +514,7 @@ public class GameManager : NetworkBehaviour
             else
             {
                 playersReady--;
-                playersReadyDictionary[id] = false; 
+                playersReadyDictionary[id] = false;
             }
             menu.ShowReadyPlayers();
             Debug.Log($"Jugadores listos {playersReady}");
