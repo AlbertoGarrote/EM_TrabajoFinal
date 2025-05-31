@@ -209,8 +209,10 @@ public class GameManager : NetworkBehaviour
         {
             if (onHostDisconnect != null)
                 onHostDisconnect();
+
             clientIds.Clear();
             clientNames.Clear();
+
             if (SceneManager.GetActiveScene().name == "MenuScene")
             {
                 menu.Disconnect();
@@ -259,10 +261,12 @@ public class GameManager : NetworkBehaviour
 
     public void OnPlayerDisconnect(ulong clientId)
     {
-        if (_networkManager.IsHost && clientId != 0)
+        if (IsHost && clientId != 0)
         {
             RemoveClientFromListClientRpc(clientId);
-            RemovePlayerClientRpc(clientNames[clientId]);
+            if (clientNames.ContainsKey(clientId))
+                RemovePlayerClientRpc(clientNames[clientId]);
+
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
