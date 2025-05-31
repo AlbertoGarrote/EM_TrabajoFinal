@@ -43,15 +43,18 @@ public class MenuManager : MonoBehaviour
             {
                 lobbyParent.SetActive(false);
                 optionsParent.SetActive(false);
+                lobbyName.gameObject.SetActive(false);
+                playerName.gameObject.SetActive(false);
+                hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
+                ResetHostButton();
+                Reset();
             }
 
 
-            lobbyName.gameObject.SetActive(false);
-            playerName.gameObject.SetActive(false);
-            hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
-            ResetHostButton();
+        
 
-            Reset();
+
+      
             foreach (var p in players)
             {
                 Destroy(p);
