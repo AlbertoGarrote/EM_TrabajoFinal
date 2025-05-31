@@ -46,6 +46,7 @@ public class MenuManager : MonoBehaviour
                 lobbyName.gameObject.SetActive(false);
                 hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
                 ResetHostButton();
+                ResetJoinButton();
                 Reset();
             }
       
@@ -244,9 +245,6 @@ public class MenuManager : MonoBehaviour
         hostButton.GetComponent<Button>().onClick.RemoveAllListeners();
         hostButton.GetComponent<Button>().onClick.AddListener(startHost);
 
-        relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
-        relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
-
     }
 
     public void Reset()
@@ -266,8 +264,14 @@ public class MenuManager : MonoBehaviour
         ResetHostButton();
         lobbyName.gameObject.SetActive(false);
         optionsParent.SetActive(false);
+        ResetJoinButton();
+    }
+
+    public void ResetJoinButton()
+    {
         playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
         relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
+        relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "UNIRSE";
     }
 }

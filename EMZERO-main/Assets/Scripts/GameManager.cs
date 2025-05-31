@@ -99,6 +99,9 @@ public class GameManager : NetworkBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+
+        //inputCodeObj = GameObject.FindWithTag("codeText"); // cuadro de texto codigo
+        //inputCode = inputCodeObj.GetComponentInChildren<TMP_InputField>();
         if (scene.name == "GameScene")
         {
             pausePanel = GameObject.FindWithTag("pausePanel");
@@ -133,6 +136,12 @@ public class GameManager : NetworkBehaviour
     {
         if (!serverStarted)
         {
+            //clientName = uniqueIdGenerator.GenerateUniqueID();
+            //_networkManager.StartHost();
+            //serverStarted = true;
+            //Debug.Log($"Iniciado el servidor");
+            //onlineTypeInfo.text = $"{clientName} [Servidor]";
+
             try
             {
                 await UnityServices.InitializeAsync();
@@ -226,6 +235,7 @@ public class GameManager : NetworkBehaviour
             {
                 menu.Disconnect();
             }
+            //_networkManager.Shutdown();
             Debug.Log("Se ha desconectado el servidor");
         }
 
@@ -447,15 +457,16 @@ public class GameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void PlayerReadyServerRpc(bool isReady)
     {
-        menu.ShowReadyPlayers();
+
         if (isReady)
-        {
-            playersReady++;
-        }
-        else
         {
             playersReady--;
         }
+        else
+        {
+            playersReady++;
+        }
+        menu.ShowReadyPlayers();
         Debug.Log($"Jugadores listos {playersReady}");
 
     }
