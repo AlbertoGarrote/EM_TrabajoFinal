@@ -282,6 +282,7 @@ public class GameManager : NetworkBehaviour
         if (IsHost && clientId != 0)
         {
             RemoveClientFromListClientRpc(clientId);
+
             if (clientNames.ContainsKey(clientId))
                 RemovePlayerClientRpc(clientNames[clientId]);
 
@@ -295,6 +296,10 @@ public class GameManager : NetworkBehaviour
                     playersReady--;
                 }
                 playersReadyDictionary.Remove(clientId);
+            }
+            else
+            {
+                Debug.Log($"no se encontró {clientId} en el diccionario de listos");
             }
             menu.ShowReadyPlayers();
         }
