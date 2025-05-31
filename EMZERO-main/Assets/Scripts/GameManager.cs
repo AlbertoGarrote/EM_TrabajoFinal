@@ -296,6 +296,7 @@ public class GameManager : NetworkBehaviour
                 }
                 playersReadyDictionary.Remove(clientId);
             }
+            menu.ShowReadyPlayers();
         }
         if (!IsHost && clientId == _networkManager.LocalClientId)
         {
