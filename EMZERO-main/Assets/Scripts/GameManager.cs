@@ -103,7 +103,8 @@ public class GameManager : NetworkBehaviour
         {
             pausePanel = GameObject.FindWithTag("pausePanel");
             pausePanel.SetActive(false);
-        }else
+        }
+        else
         {
             nameInput = GameObject.FindWithTag("nameText");
             nameInputField = nameInput.GetComponentInChildren<TMP_InputField>();
@@ -166,7 +167,7 @@ public class GameManager : NetworkBehaviour
             else
                 clientName = nameInputField.text;
 
-            nameInputField.interactable =false;
+            nameInputField.interactable = false;
 
             if (!clientNames.ContainsKey(0)) clientNames.Add(0, clientName);
             menu.ChangeLobbyName(clientName, joinCode);
@@ -263,19 +264,10 @@ public class GameManager : NetworkBehaviour
 
             if (!clientNames.ContainsKey(clientId) && clientId != 0)
             {
-                string clientName;
-                if (nameInputField.text == "")
-                {
-                    clientName = CreateClientID(clientId);
-                    nameInputField.text = clientName;
-                }
-                else
-                    clientName = AssignClientID(clientId, nameInputField.text);
-
+                CreateClientID(clientId);
                 nameInputField.interactable = false;
-
                 //menu.addPlayerToLobby(clientName);
-                AddPlayerClientRpc(clientName, clientId);
+                //AddPlayerClientRpc(clientName, clientId);
             }
 
 
@@ -333,7 +325,7 @@ public class GameManager : NetworkBehaviour
     }
 
 
-    public string CreateClientID(ulong targetClientId)
+    public void CreateClientID(ulong targetClientId)
     {
         var clientRpcParams = new ClientRpcParams
         {
@@ -343,40 +335,28 @@ public class GameManager : NetworkBehaviour
             }
         };
 
-        string clientName = uniqueIdGenerator.GenerateUniqueID();
-        List<FixedString128Bytes> clientNamesParameter = new List<FixedString128Bytes>();
-        foreach (GameObject player in menu.players)
-        {
-            clientNamesParameter.Add(player.GetComponentInChildren<TMP_Text>().text);
-        }
-        ConnectPlayerClientRpc(clientName, clientNamesParameter.ToArray(), clientIds.ToArray(), clientNames[0], clientRpcParams);
-        return clientName;
-    }
-    public string AssignClientID(ulong targetClientId, string name)
-    {
-        var clientRpcParams = new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams
-            {
-                TargetClientIds = new[] { targetClientId }
-            }
-        };
 
-        string clientName = name;
         List<FixedString128Bytes> clientNamesParameter = new List<FixedString128Bytes>();
         foreach (GameObject player in menu.players)
         {
             clientNamesParameter.Add(player.GetComponentInChildren<TMP_Text>().text);
         }
-        ConnectPlayerClientRpc(clientName, clientNamesParameter.ToArray(), clientIds.ToArray(), clientNames[0], clientRpcParams);
-        return clientName;
+        ConnectPlayerClientRpc(clientNamesParameter.ToArray(), clientIds.ToArray(), clientNames[0], clientRpcParams);
     }
     [ClientRpc]
-    private void ConnectPlayerClientRpc(string message, FixedString128Bytes[] currentPlayers, ulong[] ids, string lobbyName, ClientRpcParams clientRpcParams = default)
+    private void ConnectPlayerClientRpc(FixedString128Bytes[] currentPlayers, ulong[] ids, string lobbyName, ClientRpcParams clientRpcParams = default)
     {
         if (!IsHost)
         {
-            clientName = message;
+            if (nameInputField.text == "")
+            {
+                clientName = uniqueIdGenerator.GenerateUniqueID();
+            }
+            else
+            {
+                clientName = nameInputField.text;
+            }
+            RegisterNameServerRpc(clientName, NetworkManager.Singleton.LocalClientId);
             thisClientStarted = true;
             thisClientHasName = true;
             for (int i = 0; i < currentPlayers.Length; i++)
@@ -390,6 +370,12 @@ public class GameManager : NetworkBehaviour
 
     }
 
+    [ServerRpc]
+    private void RegisterNameServerRpc(string name, ulong id)
+    {
+        clientNames.Add(id, name);
+        AddPlayerClientRpc(name, id);
+    }
 
     [ClientRpc]
     private void RemovePlayerClientRpc(string name)
