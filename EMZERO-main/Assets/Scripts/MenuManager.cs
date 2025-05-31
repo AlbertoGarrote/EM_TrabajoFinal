@@ -138,7 +138,7 @@ public class MenuManager : MonoBehaviour
         if (NetworkManager.Singleton.IsHost)
         {
             button = GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber
-                && playersReady == GameManager.Instance.clientIds.Count;
+                && playersReady == GameManager.Instance.clientIds.Count-1;
         }
         else
         {
@@ -225,12 +225,14 @@ public class MenuManager : MonoBehaviour
         if(!isReady)
         {
             //Mandar "Listo" a servidor
+            PlayerReadyServerRpc(true);
             isReady = true;
             relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "LISTO";
         }
         else
         {
             //Mandar "No Listo" al servidor
+            PlayerReadyServerRpc(false);
             isReady = false;
             relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "NO LISTO";
         }
