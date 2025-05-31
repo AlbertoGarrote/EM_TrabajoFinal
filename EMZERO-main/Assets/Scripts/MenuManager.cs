@@ -269,6 +269,7 @@ public class MenuManager : MonoBehaviour
 
     public void ResetJoinButton()
     {
+        GameManager.Instance.playersReady = 0;
         playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
         relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         relay.GetComponentInChildren<Button>().onClick.AddListener(GameManager.Instance.startClient);
