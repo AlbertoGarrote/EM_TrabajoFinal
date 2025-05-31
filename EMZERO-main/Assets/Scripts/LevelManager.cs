@@ -82,15 +82,8 @@ public class LevelManager : NetworkBehaviour
     {
         Debug.Log("Despertando el nivel");
 
-        // Obtener la referencia al UniqueIDGenerator
-        //uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
-
         // Obtener la referencia al LevelBuilder
         levelBuilder = GetComponent<LevelBuilder>();
-
-
-
-
 
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }
@@ -157,17 +150,13 @@ public class LevelManager : NetworkBehaviour
             CoinsGenerated = levelBuilder.GetCoinsGenerated();
         }
 
-
-
         if (NetworkManager.Singleton.IsServer)
             SpawnTeams();
 
-        //createPlayersPrefabs();
         if (NetworkManager.Singleton.IsServer)
         {
             UpdateGlobalTeamUI();
         }
-
     }
 
     [ClientRpc]
@@ -223,9 +212,6 @@ public class LevelManager : NetworkBehaviour
             UpdateGlobalTeamUI();
         }
 
-
-
-
         if (Input.GetKeyDown(KeyCode.L))
         {
             GlobalGameOver(GAMEOVER_MONEDAS);
@@ -244,8 +230,6 @@ public class LevelManager : NetworkBehaviour
 
     public void ChangeToZombie(GameObject human, bool enabled)
     {
-
-
         if (human != null)
         {
             Debug.Log("Cambiando a Zombie");
@@ -256,17 +240,12 @@ public class LevelManager : NetworkBehaviour
             Transform cam = human.GetComponent<PlayerController>().cameraTransform;
             ulong id = human.GetComponent<PlayerController>().id.Value;
 
-            //teams[id] = Team.ConvertedZombie;
-
             // Destruir el humano actual
             Destroy(human);
 
-
             // Instanciar el prefab del zombie en la misma posición y rotación
             GameObject zombie = Instantiate(zombiePrefab, playerPosition, playerRotation);
-            //ulong id = zombie.GetComponent<PlayerController>().id;
             zombie.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
-
 
             if (enabled) { zombie.tag = "Player"; }
 
@@ -372,68 +351,17 @@ public class LevelManager : NetworkBehaviour
         Debug.Log($"Instanciando jugador en {spawnPosition}");
         if (prefab != null)
         {
-
             Debug.Log($"Instanciando jugador en {spawnPosition}");
             // Crear una instancia del prefab en el punto especificado
             GameObject player = Instantiate(prefab, spawnPosition, Quaternion.identity);
 
-
             player.tag = "Player";
             player.GetComponent<PlayerController>().uniqueID = GameManager.Instance.clientNames[id];
-            //player.GetComponent<PlayerController>().SetUniqueIdClientRpc(GameManager.Instance.clientNames[id]);
             player.GetComponent<PlayerController>().id.Value = id;
             player.GetComponent<PlayerController>().SubscribeToOnCoinPicked(AddTotalCoinClientRpc);
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
 
-            //GameObject camObject = Instantiate(camPrefab);
-            //Camera mainCamera = camObject.GetComponent<Camera>();
-
-
-
-
-            /*
-            if (mainCamera != null)
-            {
-                Debug.Log($"Camara instanciada");
-                // Obtener el script CameraController de la cámara principal
-                CameraController cameraController = mainCamera.gameObject.GetComponent<CameraController>();
-
-                if (cameraController != null)
-                {
-                    Debug.Log($"CameraController encontrado en la cámara principal.");
-                    // Asignar el jugador al script CameraController
-                    cameraController.player = player.transform;
-                }
-
-                Debug.Log($"Cámara principal encontrada en {mainCamera}");
-
-                //mainCamera.GetComponent<NetworkObject>().SpawnWithOwnership(id);
-
-
-
-                // Obtener el componente PlayerController del jugador instanciado
-                playerController = player.GetComponent<PlayerController>();
-                // Asignar el transform de la cámara al PlayerController
-                if (playerController != null)
-                {
-                    Debug.Log($"PlayerController encontrado en el jugador instanciado.");
-                    //playerController.enabled = true;
-                    //playerController.cameraTransform = mainCamera.transform;
-                    playerController.uniqueID = uniqueIdGenerator.GenerateUniqueID(); // Generar un identificador único
-
-                }
-                else
-                {
-                    Debug.LogError("PlayerController no encontrado en el jugador instanciado.");
-                }
-            }
-            else
-            {
-                Debug.LogError("No se encontró la cámara principal.");
-            }
-            */
         }
-
         else
         {
             Debug.LogError("Faltan referencias al prefab o al punto de aparición.");
@@ -443,21 +371,6 @@ public class LevelManager : NetworkBehaviour
 
     private void SpawnTeams()
     {
-
-        //int playerNumber = GameManager.Instance.clientIds.Count;
-        //if (playerNumber % 2 == 0)
-        //{
-        //    numberOfHumans = playerNumber / 2;
-        //    numberOfZombies = playerNumber / 2;
-        //}
-        //else
-        //{
-        //    numberOfHumans = playerNumber / 2;
-        //    numberOfZombies = (playerNumber / 2) + 1;
-        //}
-        //if (humanSpawnPoints.Count <= 0) { return; }
-        //SpawnPlayer(humanSpawnPoints[0], playerPrefab);
-        //Debug.Log($"Personaje jugable instanciado en {humanSpawnPoints[0]}");
         Debug.Log("Instanciando equipos");
 
         List<ulong> clientIdsRng = new List<ulong>(GameManager.Instance.clientIds);
@@ -472,7 +385,7 @@ public class LevelManager : NetworkBehaviour
         int playerNumber = clientIdsRng.Count;
         numberOfHumans = playerNumber / 2;
         numberOfZombies = playerNumber - numberOfHumans;
-        //int n = 0;
+
         for (int i = 0; i < numberOfHumans; i++)
         {
             if (i < humanSpawnPoints.Count)
@@ -509,27 +422,8 @@ public class LevelManager : NetworkBehaviour
             (list[k], list[count]) = (list[count], list[k]);
         }
     }
-
-    /*
-    private void SpawnNonPlayableCharacter(GameObject prefab, Vector3 spawnPosition)
-    {
-        if (prefab != null)
-        {
-            GameObject npc = Instantiate(prefab, spawnPosition, Quaternion.identity);
-            // Desactivar el controlador del jugador en los NPCs
-            var playerController = npc.GetComponent<PlayerController>();
-            if (playerController != null)
-            {
-                playerController.enabled = false; // Desactivar el controlador del jugador
-                playerController.uniqueID = uniqueIdGenerator.GenerateUniqueID(); // Asignar un identificador único
-            }
-            Debug.Log($"Personaje no jugable instanciado en {spawnPosition}");
-        }
-    }
-    ^*/
     private void UpdateTeamUI(int humans, int zombies)
     {
-        //Debug.Log("Actualizar ui");
         if (humansText != null)
         {
             humansText.text = $"{humans}";
@@ -606,7 +500,6 @@ public class LevelManager : NetworkBehaviour
         isGameOver = true;
         if (IsServer)
         {
-            //ShowGameOverPanel(reason);
             ShowGameOverPanelClientRpc(reason);
         }
     }
@@ -706,10 +599,6 @@ public class LevelManager : NetworkBehaviour
 
     public void ReturnToMainMenu()
     {
-        // Gestión del cursor
-        //Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor
-        //Cursor.visible = false; // Oculta el cursor
-
         // Cargar la escena del menú principal
         List<NetworkObject> objects = NetworkManager.Singleton.SpawnManager.SpawnedObjectsList.ToList();
         foreach (var obj in objects)
@@ -720,7 +609,6 @@ public class LevelManager : NetworkBehaviour
             }
         }
         objects.Clear();
-
 
         NetworkManager.Singleton.SceneManager.LoadScene("MenuScene", LoadSceneMode.Single); // Cambia "MenuScene" por el nombre de tu escena principal
     }
