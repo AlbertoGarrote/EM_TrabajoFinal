@@ -374,6 +374,7 @@ public class GameManager : NetworkBehaviour
     private void RegisterNameServerRpc(string name, ulong id)
     {
         clientNames.Add(id, name);
+        menu.addPlayerToLobby(name);
         AddPlayerClientRpc(name, id);
     }
 
@@ -387,8 +388,11 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void AddPlayerClientRpc(string name, ulong id)
     {
-        menu.addPlayerToLobby(name);
-        clientNames.Add(id, name);
+        if (!IsHost)
+        {
+            menu.addPlayerToLobby(name);
+            clientNames.Add(id, name);
+        }
     }
 
     [ClientRpc]
