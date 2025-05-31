@@ -62,8 +62,8 @@ public class GameManager : NetworkBehaviour
 
     public int roomNumber;
     public bool modeCoins = true;
-    public int coinDensity;
-    [SerializeField] GameObject coins, rooms;
+    public int coinDensity, totalTime;
+    [SerializeField] GameObject coins, rooms, timeSlider;
 
     public GameObject nameInput;
     public TMP_InputField nameInputField;
@@ -92,6 +92,7 @@ public class GameManager : NetworkBehaviour
 
         OptionsHandleCoins();
         OptionsHandleRooms();
+        OptionsHandleTime();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -438,8 +439,16 @@ public class GameManager : NetworkBehaviour
         rooms.GetComponentsInChildren<TMP_Text>()[1].text = "" + roomNumber;
     }
 
+    public void OptionsHandleTime()
+    {
+        totalTime = (int)timeSlider.GetComponentInChildren<Slider>().value;
+        timeSlider.GetComponentsInChildren<TMP_Text>()[1].text = "" + totalTime;
+    }
+
     public void ChangeGameMode(bool modeIsCoins)
     {
         modeCoins = modeIsCoins;
     }
+
+
 }
