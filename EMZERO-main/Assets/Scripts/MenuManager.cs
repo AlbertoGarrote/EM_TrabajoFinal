@@ -27,7 +27,6 @@ public class MenuManager : MonoBehaviour
     bool isHosted = false;
     bool isWaiting = false;
     bool isReady = false;
-    int playersReady = 0;
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
 
@@ -138,7 +137,7 @@ public class MenuManager : MonoBehaviour
         if (NetworkManager.Singleton.IsHost)
         {
             button = GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber
-                && playersReady == GameManager.Instance.clientIds.Count-1;
+                && GameManager.Instance.playersReady == GameManager.Instance.clientIds.Count-1;
         }
         else
         {
@@ -225,34 +224,19 @@ public class MenuManager : MonoBehaviour
         if(!isReady)
         {
             //Mandar "Listo" a servidor
-            PlayerReadyServerRpc(true);
+            GameManager.Instance.PlayerReadyServerRpc(true);
             isReady = true;
             relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "LISTO";
         }
         else
         {
             //Mandar "No Listo" al servidor
-            PlayerReadyServerRpc(false);
+            GameManager.Instance.PlayerReadyServerRpc(false);
             isReady = false;
             relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "NO LISTO";
         }
     }
 
-    [ServerRpc]
-    public void PlayerReadyServerRpc(bool isReady)
-    {
-      
-        if (isReady)
-        {
-            playersReady++;
-        }
-        else
-        {
-            playersReady--;
-        }
-        Debug.Log($"Jugadores listos {playersReady}");
-
-    }
 
     public void ResetHostButton()
     {

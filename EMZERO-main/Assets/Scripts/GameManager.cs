@@ -67,6 +67,8 @@ public class GameManager : NetworkBehaviour
 
     public GameObject nameInput;
     public TMP_InputField nameInputField;
+
+    public int playersReady;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -450,5 +452,20 @@ public class GameManager : NetworkBehaviour
         modeCoins = modeIsCoins;
     }
 
+    [ServerRpc]
+    public void PlayerReadyServerRpc(bool isReady)
+    {
+
+        if (isReady)
+        {
+            playersReady++;
+        }
+        else
+        {
+            playersReady--;
+        }
+        Debug.Log($"Jugadores listos {playersReady}");
+
+    }
 
 }
