@@ -194,6 +194,7 @@ public class MenuManager : MonoBehaviour
         hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
         hostButton.GetComponent<Button>().onClick.RemoveAllListeners();
         hostButton.GetComponent<Button>().onClick.AddListener(StartGame);
+        ShowReadyPlayers();
         relay.SetActive(false);
         isHosted = true;
     }
