@@ -210,6 +210,7 @@ public class GameManager : NetworkBehaviour
             if (onHostDisconnect != null)
                 onHostDisconnect();
             clientIds.Clear();
+            clientNames.Clear();
             if (SceneManager.GetActiveScene().name == "MenuScene")
             {
                 menu.Disconnect();
@@ -272,6 +273,7 @@ public class GameManager : NetworkBehaviour
                 onHostDisconnect(); //cuando el jugador se desconecta del host
 
             clientIds.Clear();
+            clientNames.Clear();
             if (SceneManager.GetActiveScene().name == "MenuScene")
             {
                 menu.Disconnect();
