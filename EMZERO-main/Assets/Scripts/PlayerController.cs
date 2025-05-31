@@ -34,7 +34,34 @@ public class PlayerController : NetworkBehaviour
     void Start()
     {
         // Buscar el objeto "CanvasPlayer" en la escena
-   
+        GameObject canvas = GameObject.Find("CanvasPlayer");
+
+        if (canvas != null)
+        {
+            Debug.Log("Canvas encontrado");
+
+            // Buscar el Panel dentro del CanvasHud
+            Transform panel = canvas.transform.Find("PanelHud");
+            if (panel != null)
+            {
+                // Buscar el TextMeshProUGUI llamado "CoinsValue" dentro del Panel
+                Transform coinTextTransform = panel.Find("Coins");
+                if (coinTextTransform != null)
+                {
+                    coinText = coinTextTransform.GetComponentInChildren<TextMeshProUGUI>();
+                    coinParent = coinTextTransform.gameObject;
+                }
+            }
+        }
+
+
+
+        if (isZombie)
+            coinParent.gameObject.SetActive(false);
+        else
+            coinParent.gameObject.SetActive(true);
+
+        UpdateCoinUI();
     }
 
     public override void OnNetworkSpawn()
@@ -70,34 +97,7 @@ public class PlayerController : NetworkBehaviour
             controller.player = transform;
         }
 
-        GameObject canvas = GameObject.Find("CanvasPlayer");
-
-        if (canvas != null)
-        {
-            Debug.Log("Canvas encontrado");
-
-            // Buscar el Panel dentro del CanvasHud
-            Transform panel = canvas.transform.Find("PanelHud");
-            if (panel != null)
-            {
-                // Buscar el TextMeshProUGUI llamado "CoinsValue" dentro del Panel
-                Transform coinTextTransform = panel.Find("Coins");
-                if (coinTextTransform != null)
-                {
-                    coinText = coinTextTransform.GetComponentInChildren<TextMeshProUGUI>();
-                    coinParent = coinTextTransform.gameObject;
-                }
-            }
-        }
-
-
-
-        if (isZombie)
-            coinParent.gameObject.SetActive(false);
-        else 
-            coinParent.gameObject.SetActive(true);
-
-        UpdateCoinUI();
+  
         base.OnNetworkSpawn();
 
     }
