@@ -4538,7 +4538,7 @@ MonoBehaviour:
   playerInfoPrefab: {fileID: 1194816618762862911, guid: e48e48fab37198d4bb92d4ec829ec418, type: 3}
   hostButton: {fileID: 360811544}
   relay: {fileID: 406641128}
-  optionsParent: {fileID: 0}
+  optionsParent: {fileID: 529727422}
   lobbyName: {fileID: 494830862}
   playerName: {fileID: 67516634}
   players: []
