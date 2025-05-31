@@ -143,7 +143,7 @@ public class LevelManager : NetworkBehaviour
         }
 
         if (IsHost)
-            SendGameModeClientRpc();
+            SendGameModeClientRpc( GameManager.Instance.modeCoins, GameManager.Instance.totalTime);
 
         remainingSeconds = minutes * 60;
 
@@ -170,10 +170,10 @@ public class LevelManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    void SendGameModeClientRpc()
+    void SendGameModeClientRpc(bool modeCoins, int time)
     {
-        minutes = GameManager.Instance.totalTime;
-        if (GameManager.Instance.modeCoins)
+        minutes = time;
+        if (modeCoins)
             gameMode = GameMode.Monedas;
         else
             gameMode = GameMode.Tiempo;
