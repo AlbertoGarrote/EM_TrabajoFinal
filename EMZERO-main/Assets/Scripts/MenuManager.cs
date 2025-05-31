@@ -26,7 +26,8 @@ public class MenuManager : MonoBehaviour
     bool isMenuScene = true;
     bool isHosted = false;
     bool isWaiting = false;
-
+    bool isReady = false;
+    int playersReady = 0;
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
 
@@ -136,7 +137,8 @@ public class MenuManager : MonoBehaviour
         bool button = false;
         if (NetworkManager.Singleton.IsHost)
         {
-            button = GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber;
+            button = GameManager.Instance.clientIds.Count >= GameManager.Instance.minPlayerNumber
+                && playersReady == GameManager.Instance.clientIds.Count;
         }
         else
         {
@@ -212,9 +214,41 @@ public class MenuManager : MonoBehaviour
         lobbyName.gameObject.SetActive(true);
         hostButton.GetComponentInChildren<TMP_Text>().text = "Esperando al host";
         //hostButton.GetComponent<Button>().interactable = false;
-        relay.SetActive(false);
+        relay.GetComponentInChildren<TMP_InputField>().gameObject.SetActive(false);
+        relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "NO LISTO";
+        relay.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
+        relay.GetComponentInChildren<Button>().onClick.AddListener(PlayerReadyToggle);
     }
 
+    public void PlayerReadyToggle()
+    {
+        if(!isReady)
+        {
+            //Mandar "Listo" a servidor
+            isReady = true;
+            relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "LISTO";
+        }
+        else
+        {
+            //Mandar "No Listo" al servidor
+            isReady = false;
+            relay.GetComponentInChildren<Button>().GetComponentInChildren<TMP_Text>().text = "NO LISTO";
+        }
+    }
+
+    [ServerRpc]
+    public void PlayerReadyServerRpc(bool isReady)
+    {
+        if (isReady)
+        {
+            playersReady++;
+        }
+        else
+        {
+            playersReady--;
+        }
+
+    }
 
     public void ResetHostButton()
     {

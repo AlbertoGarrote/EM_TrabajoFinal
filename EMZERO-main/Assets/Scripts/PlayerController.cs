@@ -6,8 +6,8 @@ using System;
 
 public class PlayerController : NetworkBehaviour
 {
-    public TextMeshProUGUI coinText;
-    public GameObject coinParent;
+    [SerializeField] public TextMeshProUGUI coinText;
+    [SerializeField] public GameObject coinParent;
 
     [Header("Stats")]
     public int CoinsCollected = 0;
