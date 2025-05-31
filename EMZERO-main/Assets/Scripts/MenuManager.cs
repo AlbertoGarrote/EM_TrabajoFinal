@@ -241,6 +241,7 @@ public class MenuManager : MonoBehaviour
     [ServerRpc]
     public void PlayerReadyServerRpc(bool isReady)
     {
+      
         if (isReady)
         {
             playersReady++;
@@ -249,6 +250,7 @@ public class MenuManager : MonoBehaviour
         {
             playersReady--;
         }
+        Debug.Log($"Jugadores listos {playersReady}");
 
     }
 
