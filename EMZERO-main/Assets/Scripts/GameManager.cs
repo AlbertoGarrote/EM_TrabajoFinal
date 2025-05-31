@@ -231,7 +231,8 @@ public class GameManager : NetworkBehaviour
 
             clientIds.Clear();
             clientNames.Clear();
-
+            playersReady = 0;
+            playersReadyDictionary.Clear();
             if (SceneManager.GetActiveScene().name == "MenuScene")
             {
                 menu.Disconnect();
