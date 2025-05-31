@@ -61,7 +61,7 @@ public class GameManager : NetworkBehaviour
     public Action onHostDisconnect;
 
     public int roomNumber;
-    public bool modeCoins;
+    public bool modeCoins = true;
     public int coinDensity;
     [SerializeField] GameObject coins, rooms;
     void Awake()
@@ -85,6 +85,7 @@ public class GameManager : NetworkBehaviour
         uniqueIdGenerator = GetComponent<UniqueIdGenerator>();
         menu.startHost = startServer;
         SceneManager.sceneLoaded += OnSceneLoaded;
+
 
         OptionsHandleCoins();
         OptionsHandleRooms();
@@ -196,6 +197,7 @@ public class GameManager : NetworkBehaviour
 
     public void disconectSelf()
     {
+
         if (_networkManager.IsClient)
         {
 
@@ -205,11 +207,17 @@ public class GameManager : NetworkBehaviour
         }
         if (_networkManager.IsServer)
         {
-            onHostDisconnect();
+            if (onHostDisconnect != null)
+                onHostDisconnect();
 
+            if(SceneManager.GetActiveScene().name == "MenuScene")
+            {
+                menu.Disconnect();
+            }
             //_networkManager.Shutdown();
             Debug.Log("Se ha desconectado el servidor");
         }
+
 
     }
 
@@ -225,7 +233,8 @@ public class GameManager : NetworkBehaviour
                 }
             };
 
-            foreach (var id in clientIds)
+            var clientIdsCopy = clientIds.ToList();
+            foreach (var id in clientIdsCopy)
             {
                 AddClientToListClientRpc(id, clientRpcParams);
             }
@@ -251,7 +260,7 @@ public class GameManager : NetworkBehaviour
     {
         if (_networkManager.IsHost)
         {
-
+            clientIds.Clear();
             RemoveClientFromListClientRpc(clientId);
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
@@ -260,7 +269,10 @@ public class GameManager : NetworkBehaviour
         }
         if (!IsHost && clientId == _networkManager.LocalClientId)
         {
-            onHostDisconnect(); //cuando el jugador se desconecta del host
+            if (onHostDisconnect != null)
+                onHostDisconnect(); //cuando el jugador se desconecta del host
+
+            clientIds.Clear();
 
         }
         RemovePlayerClientRpc(clientNames[clientId]);
@@ -382,6 +394,11 @@ public class GameManager : NetworkBehaviour
     public void OptionsHandleRooms()
     {
         roomNumber = (int)rooms.GetComponentInChildren<Slider>().value;
-        rooms.GetComponentsInChildren<TMP_Text>()[1].text = "" +roomNumber;
+        rooms.GetComponentsInChildren<TMP_Text>()[1].text = "" + roomNumber;
+    }
+
+    public void ChangeGameMode(bool modeIsCoins)
+    {
+        modeCoins = modeIsCoins;
     }
 }

@@ -15,7 +15,7 @@ public class MenuManager : MonoBehaviour
 {
     public static MenuManager Instance;
     [SerializeField] Button startButton;
-    [SerializeField] GameObject lobbyParent, layerGroup, playerInfoPrefab, hostButton, relay;
+    [SerializeField] GameObject lobbyParent, layerGroup, playerInfoPrefab, hostButton, relay, optionsParent;
     [SerializeField] TMP_Text lobbyName, playerName;
     public List<GameObject> players;
     public UnityAction startHost;
@@ -27,23 +27,6 @@ public class MenuManager : MonoBehaviour
     bool isHosted = false;
     bool isWaiting = false;
 
-    public void Start()
-    {
-        if (NetworkManager.Singleton.IsClient)
-            lobbyParent.SetActive(true);
-        else
-            lobbyParent.SetActive(false);
-
-        
-
-        lobbyName.gameObject.SetActive(false);
-        playerName.gameObject.SetActive(false);
-        hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
-        ResetHostButton();
-
-
-    }
-
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
 
@@ -51,6 +34,23 @@ public class MenuManager : MonoBehaviour
         {
             isMenuScene = true;
             canvas.SetActive(true);
+            if (NetworkManager.Singleton.IsClient)
+            {
+                lobbyParent.SetActive(true);
+
+            }
+            else
+            {
+                lobbyParent.SetActive(false);
+                optionsParent.SetActive(false);
+            }
+
+
+            lobbyName.gameObject.SetActive(false);
+            playerName.gameObject.SetActive(false);
+            hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
+            ResetHostButton();
+
             Reset();
             foreach (var p in players)
             {
@@ -195,6 +195,7 @@ public class MenuManager : MonoBehaviour
 
     public void StartHostButton()
     {
+        optionsParent.SetActive(true);
         lobbyName.gameObject.SetActive(true);
         hostButton.GetComponentInChildren<TMP_Text>().text = $"JUGAR ({GameManager.Instance.clientIds.Count}/{GameManager.Instance.minPlayerNumber})";
         hostButton.GetComponent<Button>().onClick.RemoveAllListeners();
@@ -215,6 +216,7 @@ public class MenuManager : MonoBehaviour
 
     public void ResetHostButton()
     {
+
         //hostButton.GetComponent<Button>().interactable = true;
         isWaiting = false;
         hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
@@ -240,5 +242,18 @@ public class MenuManager : MonoBehaviour
         {
             playerName.text += " [host]";
         }
+    }
+
+    public void Disconnect()
+    {
+        foreach (var p in players)
+        {
+            Destroy(p);
+        }
+        players.Clear();
+        ResetHostButton();
+        lobbyName.gameObject.SetActive(false);
+        playerName.gameObject.SetActive(false);
+        optionsParent.SetActive(false);
     }
 }

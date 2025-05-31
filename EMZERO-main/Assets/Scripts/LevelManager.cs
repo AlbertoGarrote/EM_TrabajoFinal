@@ -89,18 +89,20 @@ public class LevelManager : NetworkBehaviour
 
        
 
-        GameManager.Instance.onHostDisconnect += () => ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
+        
 
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }
 
     private void OnEnable()
     {
+        GameManager.Instance.onHostDisconnect += () => ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
         NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
     }
 
     private void OnDisable()
     {
+        GameManager.Instance.onHostDisconnect -= () => ShowGameOverPanel(GAMEOVER_DESCONEXION_HOST);
         NetworkManager.Singleton.OnClientDisconnectCallback -= OnPlayerDisconnect;
     }
 
