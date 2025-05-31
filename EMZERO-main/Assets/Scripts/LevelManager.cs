@@ -87,9 +87,9 @@ public class LevelManager : NetworkBehaviour
         // Obtener la referencia al LevelBuilder
         levelBuilder = GetComponent<LevelBuilder>();
 
-       
 
-        
+
+
 
         Time.timeScale = 1f; // Asegurarse de que el tiempo no esté detenido
     }
@@ -142,6 +142,9 @@ public class LevelManager : NetworkBehaviour
             }
         }
 
+        if (IsHost)
+            SendGameModeClientRpc();
+
         remainingSeconds = minutes * 60;
 
         // Obtener los puntos de aparición y el número de monedas generadas desde LevelBuilder
@@ -164,6 +167,15 @@ public class LevelManager : NetworkBehaviour
             UpdateGlobalTeamUI();
         }
 
+    }
+
+    [ClientRpc]
+    void SendGameModeClientRpc()
+    {
+        if (GameManager.Instance.modeCoins)
+            gameMode = GameMode.Monedas;
+        else
+            gameMode = GameMode.Tiempo;
     }
     private void Update()
     {
