@@ -44,7 +44,6 @@ public class MenuManager : MonoBehaviour
                 lobbyParent.SetActive(false);
                 optionsParent.SetActive(false);
                 lobbyName.gameObject.SetActive(false);
-                playerName.gameObject.SetActive(false);
                 hostButton.GetComponentInChildren<TMP_Text>().text = "HOST";
                 ResetHostButton();
                 Reset();
@@ -237,16 +236,6 @@ public class MenuManager : MonoBehaviour
         startButton.enabled = true;
     }
 
-    public void ChangePlayerName(string name, bool host)
-    {
-        playerName.gameObject.SetActive(true);
-        playerName.text = $"Tu nombre: {name}";
-        if (host)
-        {
-            playerName.text += " [host]";
-        }
-    }
-
     public void Disconnect()
     {
         foreach (var p in players)
@@ -256,7 +245,7 @@ public class MenuManager : MonoBehaviour
         players.Clear();
         ResetHostButton();
         lobbyName.gameObject.SetActive(false);
-        playerName.gameObject.SetActive(false);
         optionsParent.SetActive(false);
+        playerName.GetComponentInChildren<TMP_InputField>().interactable = true;
     }
 }

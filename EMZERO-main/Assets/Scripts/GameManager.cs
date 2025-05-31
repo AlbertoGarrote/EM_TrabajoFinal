@@ -64,6 +64,9 @@ public class GameManager : NetworkBehaviour
     public bool modeCoins = true;
     public int coinDensity;
     [SerializeField] GameObject coins, rooms;
+
+    public GameObject nameInput;
+    public TMP_InputField nameInputField;
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -100,6 +103,10 @@ public class GameManager : NetworkBehaviour
         {
             pausePanel = GameObject.FindWithTag("pausePanel");
             pausePanel.SetActive(false);
+        }else
+        {
+            nameInput = GameObject.FindWithTag("nameText");
+            nameInputField = nameInput.GetComponentInChildren<TMP_InputField>();
         }
 
 
@@ -151,12 +158,19 @@ public class GameManager : NetworkBehaviour
                 Debug.Log(e);
             }
 
+            if (nameInputField.text == "")
+            {
+                clientName = uniqueIdGenerator.GenerateUniqueID();
+                nameInputField.text = clientName;
+            }
+            else
+                clientName = nameInputField.text;
 
-            clientName = uniqueIdGenerator.GenerateUniqueID();
+            nameInputField.interactable =false;
+
             if (!clientNames.ContainsKey(0)) clientNames.Add(0, clientName);
             menu.ChangeLobbyName(clientName, joinCode);
             menu.StartHostButton();
-            menu.ChangePlayerName(clientName, true);
             menu.addPlayerToLobby(clientName);
 
         }
@@ -249,7 +263,17 @@ public class GameManager : NetworkBehaviour
 
             if (!clientNames.ContainsKey(clientId) && clientId != 0)
             {
-                string clientName = CreateClientID(clientId);
+                string clientName;
+                if (nameInputField.text == "")
+                {
+                    clientName = CreateClientID(clientId);
+                    nameInputField.text = clientName;
+                }
+                else
+                    clientName = AssignClientID(clientId, nameInputField.text);
+
+                nameInputField.interactable = false;
+
                 //menu.addPlayerToLobby(clientName);
                 AddPlayerClientRpc(clientName, clientId);
             }
@@ -328,7 +352,25 @@ public class GameManager : NetworkBehaviour
         ConnectPlayerClientRpc(clientName, clientNamesParameter.ToArray(), clientIds.ToArray(), clientNames[0], clientRpcParams);
         return clientName;
     }
+    public string AssignClientID(ulong targetClientId, string name)
+    {
+        var clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new[] { targetClientId }
+            }
+        };
 
+        string clientName = name;
+        List<FixedString128Bytes> clientNamesParameter = new List<FixedString128Bytes>();
+        foreach (GameObject player in menu.players)
+        {
+            clientNamesParameter.Add(player.GetComponentInChildren<TMP_Text>().text);
+        }
+        ConnectPlayerClientRpc(clientName, clientNamesParameter.ToArray(), clientIds.ToArray(), clientNames[0], clientRpcParams);
+        return clientName;
+    }
     [ClientRpc]
     private void ConnectPlayerClientRpc(string message, FixedString128Bytes[] currentPlayers, ulong[] ids, string lobbyName, ClientRpcParams clientRpcParams = default)
     {
@@ -343,7 +385,6 @@ public class GameManager : NetworkBehaviour
                 clientNames.Add(ids[i], currentPlayers[i].ToString());
             }
             menu.StartClientButton();
-            menu.ChangePlayerName(clientName, false);
             menu.ChangeLobbyName(lobbyName);
         }
 

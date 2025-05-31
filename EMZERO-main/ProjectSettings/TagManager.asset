@@ -10,6 +10,7 @@ TagManager:
   - onlineInfo
   - codeText
   - pausePanel
+  - nameText
   layers:
   - Default
   - TransparentFX
