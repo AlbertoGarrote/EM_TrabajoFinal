@@ -6,7 +6,7 @@ using System;
 
 public class PlayerController : NetworkBehaviour
 {
-    private TextMeshProUGUI coinText;
+    public TextMeshProUGUI coinText;
 
     [Header("Stats")]
     public int CoinsCollected = 0;
@@ -69,7 +69,7 @@ public class PlayerController : NetworkBehaviour
             }
 
         }
-        else if(!IsHost && IsClient)
+        else if (!IsHost && IsClient)
         {
             camera = GameObject.FindWithTag("Camera");
 
@@ -87,6 +87,12 @@ public class PlayerController : NetworkBehaviour
             controller.enabled = true;
             controller.player = transform;
         }
+
+        if (isZombie)
+            coinText.gameObject.SetActive(false);
+        else 
+            coinText.gameObject.SetActive(true);
+
         base.OnNetworkSpawn();
 
     }
@@ -173,7 +179,7 @@ public class PlayerController : NetworkBehaviour
     [ClientRpc]
     public void CollectCoinClientRpc()
     {
-        if(IsHost) onCoinPicked();
+        if (IsHost) onCoinPicked();
         if (IsOwner)
             CoinCollected();
     }

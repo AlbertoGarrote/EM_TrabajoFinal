@@ -381,7 +381,10 @@ public class LevelManager : NetworkBehaviour
             player.GetComponent<PlayerController>().id = id;
             player.GetComponent<PlayerController>().SubscribeToOnCoinPicked(AddTotalCoinClientRpc);
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(id);
-
+            if(player.GetComponent<PlayerController>().isZombie)
+            {
+                player.GetComponent<PlayerController>().coinText.gameObject.SetActive(false);
+            }
             //GameObject camObject = Instantiate(camPrefab);
             //Camera mainCamera = camObject.GetComponent<Camera>();
 
