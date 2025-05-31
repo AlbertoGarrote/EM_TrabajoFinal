@@ -259,9 +259,10 @@ public class GameManager : NetworkBehaviour
 
     public void OnPlayerDisconnect(ulong clientId)
     {
-        if (_networkManager.IsHost)
+        if (_networkManager.IsHost && clientId != 0)
         {
             RemoveClientFromListClientRpc(clientId);
+            RemovePlayerClientRpc(clientNames[clientId]);
             Debug.Log($"Se ha desconectado el jugador: {clientId}");
             Debug.Log($"Numero de jugadores: {clientIds.Count}");
 
@@ -280,7 +281,7 @@ public class GameManager : NetworkBehaviour
             }
 
         }
-        RemovePlayerClientRpc(clientNames[clientId]);
+
 
     }
 
