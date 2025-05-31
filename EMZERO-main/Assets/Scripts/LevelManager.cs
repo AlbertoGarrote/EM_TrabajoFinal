@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -441,45 +442,70 @@ public class LevelManager : NetworkBehaviour
 
     private void SpawnTeams()
     {
-        Debug.Log("Instanciando equipos");
-        int playerNumber = GameManager.Instance.clientIds.Count;
-        if (playerNumber % 2 == 0)
-        {
-            numberOfHumans = playerNumber / 2;
-            numberOfZombies = playerNumber / 2;
-        }
-        else
-        {
-            numberOfHumans = playerNumber / 2;
-            numberOfZombies = (playerNumber / 2) + 1;
-        }
+
+        //int playerNumber = GameManager.Instance.clientIds.Count;
+        //if (playerNumber % 2 == 0)
+        //{
+        //    numberOfHumans = playerNumber / 2;
+        //    numberOfZombies = playerNumber / 2;
+        //}
+        //else
+        //{
+        //    numberOfHumans = playerNumber / 2;
+        //    numberOfZombies = (playerNumber / 2) + 1;
+        //}
         //if (humanSpawnPoints.Count <= 0) { return; }
         //SpawnPlayer(humanSpawnPoints[0], playerPrefab);
         //Debug.Log($"Personaje jugable instanciado en {humanSpawnPoints[0]}");
+        Debug.Log("Instanciando equipos");
 
-        int n = 0;
-        for (int i = 0; i < numberOfHumans; i++, n++)
+        List<ulong> clientIdsRng = new List<ulong>(GameManager.Instance.clientIds);
+        ShuffleList(clientIdsRng);
+
+        List<Vector3> humanSpawnPointsRng = new List<Vector3>(humanSpawnPoints);
+        ShuffleList(humanSpawnPointsRng);
+
+        List<Vector3> zombieSpawnPointsRng = new List<Vector3>(zombieSpawnPoints);
+        ShuffleList(zombieSpawnPointsRng);
+
+        int playerNumber = clientIdsRng.Count;
+        numberOfHumans = playerNumber / 2;
+        numberOfZombies = playerNumber - numberOfHumans;
+        //int n = 0;
+        for (int i = 0; i < numberOfHumans; i++)
         {
             if (i < humanSpawnPoints.Count)
             {
-                ulong id = GameManager.Instance.clientIds[n];
+                ulong id = clientIdsRng[i];
                 Debug.Log($"Creando humano para el jugador {id}");
-                SpawnPlayer(humanSpawnPoints[i], playerPrefab, id);
+                SpawnPlayer(humanSpawnPointsRng[i], playerPrefab, id);
                 teams.Add(id, Team.Human);
                 AddDictionaryClientRpc(id, Team.Human);
             }
         }
 
-        for (int i = 0; i < numberOfZombies; i++, n++)
+        for (int i = 0; i < numberOfZombies; i++)
         {
             if (i < zombieSpawnPoints.Count)
             {
-                ulong id = GameManager.Instance.clientIds[n];
+                ulong id = clientIdsRng[numberOfHumans + i];
                 Debug.Log($"Creando zombie para el jugador {id}");
-                SpawnPlayer(zombieSpawnPoints[i], zombiePrefab, id);
+                SpawnPlayer(zombieSpawnPointsRng[i], zombiePrefab, id);
                 teams.Add(id, Team.Zombie);
                 AddDictionaryClientRpc(id, Team.Zombie);
             }
+        }
+    }
+
+    public static void ShuffleList<T>(List<T> list)
+    {
+        System.Random rng = new System.Random();
+        int count = list.Count;
+        while (count > 1)
+        {
+            count--;
+            int k = rng.Next(count + 1);
+            (list[k], list[count]) = (list[count], list[k]);
         }
     }
 
